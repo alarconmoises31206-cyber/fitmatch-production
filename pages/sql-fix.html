@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fix ML Database - SQL Instructions</title>
+    <style>
+        body { font-family: system-ui; max-width: 800px; margin: 40px auto; padding: 20px; }
+        .step { background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #0070f3; }
+        code { background: #1e1e1e; color: #fff; padding: 10px; border-radius: 5px; display: block; overflow-x: auto; }
+        .success { color: #10b981; }
+        .action { background: #0070f3; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; display: inline-block; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Fix ML Database - SQL Instructions</h1>
+    
+    <div class="step">
+        <h2>Step 1: Go to Supabase Dashboard</h2>
+        <p>Open your Supabase project dashboard</p>
+    </div>
+    
+    <div class="step">
+        <h2>Step 2: Open SQL Editor</h2>
+        <p>Click on "SQL Editor" in the left sidebar</p>
+    </div>
+    
+    <div class="step">
+        <h2>Step 3: Run this SQL code:</h2>
+        <code>
+-- Add trainers to profiles table
+INSERT INTO profiles (first_name, last_name, email, role, created_at, updated_at)
+VALUES 
+  ('Alex', 'Johnson', 'alex.trainer@fitmatch.com', 'trainer', NOW(), NOW()),
+  ('Sarah', 'Miller', 'sarah.trainer@fitmatch.com', 'trainer', NOW(), NOW()),
+  ('Mike', 'Davis', 'mike.trainer@fitmatch.com', 'trainer', NOW(), NOW())
+ON CONFLICT (email) DO UPDATE SET
+  first_name = EXCLUDED.first_name,
+  last_name = EXCLUDED.last_name,
+  role = EXCLUDED.role,
+  updated_at = NOW();
+
+-- Verify insertion
+SELECT id, first_name, last_name, email, role FROM profiles WHERE role = 'trainer';
+        </code>
+    </div>
+    
+    <div class="step">
+        <h2>Step 4: Check if it worked</h2>
+        <p>Run this query to verify:</p>
+        <code>SELECT COUNT(*) as trainer_count FROM profiles WHERE role = 'trainer';</code>
+        <p>Should show: <span class="success">trainer_count: 3</span></p>
+    </div>
+    
+    <div class="step">
+        <h2>Step 5: Test ML System</h2>
+        <p>After adding trainers, test the ML system:</p>
+        <a href="/matches" class="action">Test Matches Page</a>
+    </div>
+    
+    <div class="step">
+        <h2>Alternative: If profiles table doesn't accept role='trainer'</h2>
+        <p>Try adding to a different table:</p>
+        <code>
+-- Try trainer_profiles if it exists
+INSERT INTO trainer_profiles (headline, bio, specialties, experience_years, hourly_rate)
+VALUES 
+  ('Weight Loss Expert', 'Certified trainer', ARRAY['Weight Loss', 'HIIT'], 5, 75),
+  ('Yoga Instructor', 'Yoga specialist', ARRAY['Yoga', 'Meditation'], 3, 65),
+  ('Strength Coach', 'Strength training', ARRAY['Bodybuilding', 'Strength'], 8, 85);
+        </code>
+    </div>
+    
+    <script>
+        // Simple test function
+        function testML() {
+            fetch('/api/ml/match', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: 'test', debug: true})
+            })
+            .then(r => r.json())
+            .then(data => {
+                alert(`ML Status:\nSuccess: ${data.success}\nTrainers found: ${data.client_top_matches?.count || 0}\nUsing ML: ${data.using_ml || 'false'}`);
+            });
+        }
+    </script>
+</body>
+</html>
