@@ -1,6 +1,6 @@
 // /pages/api/credits/get.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { createSupabaseServer } from '../../../lib/supabase/server';
+import { createSupabaseClient } from '../../../lib/supabase/client';
 
 export default async function handler(
   req: NextApiRequest,
@@ -19,7 +19,7 @@ export default async function handler(
     });
   }
 
-  const supabase = createSupabaseServer();
+  const supabase = createSupabaseClient();
 
   try {
     // Get user credits

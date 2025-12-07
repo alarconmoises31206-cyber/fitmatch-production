@@ -1,6 +1,6 @@
 // /pages/api/credits/reveal.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { createSupabaseServer } from '../../../lib/supabase/server';
+import { createSupabaseClient } from '../../../lib/supabase/client';
 import { z } from 'zod';
 
 const revealRequestSchema = z.object({
@@ -26,7 +26,7 @@ export default async function handler(
   }
 
   const { trainer_id, user_id } = validation.data;
-  const supabase = createSupabaseServer();
+  const supabase = createSupabaseClient();
 
   try {
     // 1. Check if trainer exists and has active subscription

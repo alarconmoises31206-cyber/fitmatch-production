@@ -1,6 +1,6 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase/client';
+import { createSupabaseClient } from '../lib/supabase/client';
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
@@ -8,7 +8,7 @@ export default function Home() {
 
   useEffect(() => {
     async function checkUser() {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await createSupabaseClient().auth.getSession();
       setUser(session?.user || null);
       setLoading(false);
     }
@@ -43,7 +43,7 @@ export default function Home() {
                   </Link>
                   <Link 
                     href="/auth/login" 
-                    onClick={async () => await supabase.auth.signOut()}
+                    onClick={async () => await createSupabaseClient().auth.signOut()}
                     className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
                   >
                     Sign Out
@@ -131,7 +131,7 @@ export default function Home() {
             <div className="space-y-10 md:space-y-0 md:grid md:grid-cols-3 md:gap-x-8 md:gap-y-10">
               <div className="text-center">
                 <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white mx-auto">
-                  <span className="text-xl">📝</span>
+                  <span className="text-xl">??</span>
                 </div>
                 <div className="mt-5">
                   <h3 className="text-lg leading-6 font-medium text-gray-900">Complete Your Profile</h3>
@@ -143,7 +143,7 @@ export default function Home() {
 
               <div className="text-center">
                 <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white mx-auto">
-                  <span className="text-xl">🔍</span>
+                  <span className="text-xl">??</span>
                 </div>
                 <div className="mt-5">
                   <h3 className="text-lg leading-6 font-medium text-gray-900">Get Matched</h3>
@@ -155,7 +155,7 @@ export default function Home() {
 
               <div className="text-center">
                 <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white mx-auto">
-                  <span className="text-xl">💪</span>
+                  <span className="text-xl">??</span>
                 </div>
                 <div className="mt-5">
                   <h3 className="text-lg leading-6 font-medium text-gray-900">Start Training</h3>

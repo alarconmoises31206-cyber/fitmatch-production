@@ -1,180 +1,299 @@
-﻿import { NextApiRequest, NextApiResponse } from "next";
-import Stripe from "stripe";
-import { supabase } from "../../../lib/supabase/client";
+// /pages/api/stripe/webhook.ts
+import type { NextApiRequest, NextApiResponse } from 'next';
+import Stripe from 'stripe';
+import { supabaseAdmin } from '../../../lib/supabaseServer';
 
+// Initialize Stripe with the same version as before
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2025-02-24.acacia',
+});
+
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+
+// Helper to buffer the request stream
+async function buffer(readable: any) {
+  const chunks = [];
+  for await (const chunk of readable) {
+    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
+// Disable Next.js body parser for webhooks
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
-async function buffer(readable: any) {
-  const chunks = [];
-  for await (const chunk of readable) {
-    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
-  }
-  return Buffer.concat(chunks);
-}
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  console.log("Webhook called");
-  
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-      apiVersion: "2022-11-15",
-    });
+    // 1. Read the request body as buffer
+    const buf = await buffer(req);
+    const sig = req.headers['stripe-signature'] as string;
 
-    const sig = req.headers["stripe-signature"] as string;
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-    if (!webhookSecret) {
-      console.error("Webhook secret missing");
-      return res.status(500).json({ error: "Webhook secret not configured" });
+    if (!sig) {
+      return res.status(400).json({ error: 'No stripe-signature header' });
     }
 
-    const rawBody = await buffer(req);
-    const event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
-    
-    console.log("Webhook received:", event.type);
-    
-    // Handle checkout.session.completed
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      await handleCheckoutSessionCompleted(session, stripe);
+    // 2. Verify the webhook signature
+    let event: Stripe.Event;
+    try {
+      event = stripe.webhooks.constructEvent(buf, sig, webhookSecret);
+    } catch (err: any) {
+      console.error('❌ Webhook signature verification failed:', err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
     }
-    
-    res.status(200).json({ 
-      received: true, 
-      type: event.type,
-      message: "Webhook processed" 
-    });
-    
-  } catch (err: any) {
-    console.error("Webhook error:", err.message);
-    return res.status(400).json({ error: "Webhook Error: " + err.message });
+
+    console.log(`✅ Webhook received: ${event.type}`);
+
+    // 3. Handle specific event types
+    switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
+        break;
+
+      case 'checkout.session.async_payment_failed':
+        await handleCheckoutSessionFailed(event.data.object as Stripe.Checkout.Session);
+        break;
+
+      case 'charge.refunded':
+        await handleChargeRefunded(event.data.object as Stripe.Charge);
+        break;
+
+      case 'charge.dispute.created':
+        await handleDisputeCreated(event.data.object as Stripe.Dispute);
+        break;
+
+      default:
+        console.log(`⚠️ Unhandled event type: ${event.type}`);
+    }
+
+    // 4. Return success response
+    return res.status(200).json({ received: true });
+
+  } catch (error: any) {
+    console.error('❌ Webhook handler error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
 
-async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, stripe: Stripe) {
-  console.log("=== Processing checkout session ===");
-  console.log("Session ID:", session.id);
-  console.log("Metadata:", session.metadata);
-  
-  const metadata = session.metadata || {};
-  const userId = metadata.userId;
-  const productType = metadata.productType;
-  
-  console.log("User ID from metadata:", userId);
-  console.log("Product type from metadata:", productType);
-  
-  if (!userId) {
-    console.error("No userId in session metadata");
-    return;
-  }
-  
-  if (productType === "spin_pack") {
-    console.log("Processing spin pack purchase");
-    
-    // Get the line items to find price ID
-    let priceId = "";
-    let spinCount = 0;
-    
-    try {
-      const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
-        limit: 1,
+// ======================
+// EVENT HANDLERS
+// ======================
+
+async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+  try {
+    const userId = session.metadata?.user_id;
+    const sessionId = session.id;
+    const amountTotal = session.amount_total; // in cents
+
+    if (!userId || !amountTotal) {
+      console.error('Missing user_id or amount in session metadata:', sessionId);
+      return;
+    }
+
+    console.log(`💰 Processing successful checkout: ${sessionId} for user ${userId}, amount: ${amountTotal} cents`);
+
+    // 1. Ensure user has a wallet record
+    const { error: upsertError } = await supabaseAdmin
+      .from('user_wallets')
+      .upsert(
+        { 
+          user_id: userId, 
+          balance_cents: 0, // Will be incremented by RPC
+          updated_at: new Date().toISOString() 
+        },
+        { onConflict: 'user_id' }
+      );
+
+    if (upsertError) {
+      console.error('Failed to upsert wallet:', upsertError);
+      throw upsertError;
+    }
+
+    // 2. Use the RPC function to atomically increment wallet balance
+    const { data: rpcResult, error: rpcError } = await supabaseAdmin
+      .rpc('increment_wallet_balance', {
+        p_user_id: userId,
+        p_amount_cents: amountTotal
       });
-      
-      if (lineItems.data.length > 0) {
-        priceId = lineItems.data[0].price?.id || "";
-        console.log("Price ID from line items:", priceId);
-      }
-    } catch (err: any) {
-      console.error("Error fetching line items:", err.message);
+
+    if (rpcError) {
+      console.error('RPC increment_wallet_balance failed:', rpcError);
+      throw rpcError;
     }
-    
-    if (!priceId && session.line_items?.data && session.line_items.data.length > 0) {
-      priceId = session.line_items.data[0].price?.id || "";
-      console.log("Price ID from session:", priceId);
+
+    const newBalance = rpcResult as number;
+
+    // 3. Record the transaction in wallet_transactions
+    const { error: txError } = await supabaseAdmin
+      .from('wallet_transactions')
+      .insert({
+        user_id: userId,
+        type: 'credit_purchase',
+        amount_cents: amountTotal,
+        balance_after: newBalance,
+        metadata: {
+          stripe_session_id: sessionId,
+          stripe_payment_intent: session.payment_intent,
+          currency: session.currency,
+          description: session.metadata?.description || 'Credit purchase'
+        }
+      });
+
+    if (txError) {
+      console.error('Failed to record wallet transaction:', txError);
+      throw txError;
     }
-    
-    // Determine spin count based on price ID
-    const price3 = process.env.STRIPE_PRICE_SPIN_3;
-    const price10 = process.env.STRIPE_PRICE_SPIN_10;
-    
-    console.log("Price 3 from env:", price3);
-    console.log("Price 10 from env:", price10);
-    console.log("Actual price ID:", priceId);
-    
-    if (priceId === price3) {
-      spinCount = 3;
-    } else if (priceId === price10) {
-      spinCount = 10;
-    } else if (session.amount_total === 499) {
-      spinCount = 3; // $4.99 = 3 spins
-    } else if (session.amount_total === 999) {
-      spinCount = 10; // $9.99 = 10 spins
-    }
-    
-    console.log("Spin count determined:", spinCount);
-    
-    if (spinCount > 0) {
-      console.log("Adding", spinCount, "spins to user", userId);
-      
-      // Add spins to user account
-      const { data: currentCredits, error: fetchError } = await supabase
-        .from("user_credits")
-        .select("*")
-        .eq("user_id", userId)
-        .single();
-      
-      console.log("Fetch current credits error:", fetchError);
-      console.log("Current credits:", currentCredits);
-      
-      if (currentCredits) {
-        // Update existing
-        const { error: updateError } = await supabase
-          .from("user_credits")
-          .update({
-            spins_remaining: currentCredits.spins_remaining + spinCount,
-            last_purchased_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("user_id", userId);
-        
-        console.log("Update error:", updateError);
-      } else {
-        // Create new
-        const { error: insertError } = await supabase
-          .from("user_credits")
-          .insert({
-            user_id: userId,
-            spins_remaining: spinCount,
-            last_purchased_at: new Date().toISOString(),
-          });
-        
-        console.log("Insert error:", insertError);
-      }
-      
-      console.log("Added " + spinCount + " spins to user " + userId);
-    } else {
-      console.log("Could not determine spin count for price ID:", priceId);
-    }
+
+    // 4. Update any pending transaction records
+    await supabaseAdmin
+      .from('wallet_transactions')
+      .update({
+        metadata: { 
+          ...session.metadata,
+          status: 'completed',
+          completed_at: new Date().toISOString()
+        }
+      })
+      .eq('metadata->>stripe_session_id', sessionId)
+      .eq('type', 'credit_purchase_pending');
+
+    console.log(`✅ Successfully credited ${amountTotal} cents to user ${userId}. New balance: ${newBalance} cents`);
+
+  } catch (error: any) {
+    console.error('❌ Error in handleCheckoutSessionCompleted:', error);
+    // In production, you might want to retry or alert here
   }
-  
-  // Log billing event
-  const { error: billingError } = await supabase
-    .from("billing_events")
-    .insert({
-      user_id: userId,
-      event_type: "checkout.session.completed",
-      stripe_event_id: session.id,
-      payload: session,
-    });
-  
-  console.log("Billing event insert error:", billingError);
-  console.log("=== Finished processing ===");
+}
+
+async function handleCheckoutSessionFailed(session: Stripe.Checkout.Session) {
+  try {
+    const sessionId = session.id;
+    const userId = session.metadata?.user_id;
+
+    console.log(`❌ Checkout session failed: ${sessionId} for user ${userId}`);
+
+    // Update pending transaction status
+    await supabaseAdmin
+      .from('wallet_transactions')
+      .update({
+        metadata: { 
+          status: 'failed',
+          failed_at: new Date().toISOString(),
+          failure_reason: session.payment_status
+        }
+      })
+      .eq('metadata->>stripe_session_id', sessionId)
+      .eq('type', 'credit_purchase_pending');
+
+  } catch (error: any) {
+    console.error('Error in handleCheckoutSessionFailed:', error);
+  }
+}
+
+async function handleChargeRefunded(charge: Stripe.Charge) {
+  try {
+    const paymentIntentId = charge.payment_intent as string;
+    
+    console.log(`🔄 Processing refund for payment intent: ${paymentIntentId}`);
+
+    // Find the original transaction
+    const { data: originalTx, error: findError } = await supabaseAdmin
+      .from('wallet_transactions')
+      .select('*')
+      .eq('metadata->>stripe_payment_intent', paymentIntentId)
+      .eq('type', 'credit_purchase')
+      .single();
+
+    if (findError || !originalTx) {
+      console.error('Could not find original transaction for refund:', paymentIntentId);
+      return;
+    }
+
+    const userId = originalTx.user_id;
+    const refundAmount = charge.amount_refunded; // in cents
+
+    // Deduct from user's wallet using RPC (negative amount)
+    const { data: newBalance, error: rpcError } = await supabaseAdmin
+      .rpc('increment_wallet_balance', {
+        p_user_id: userId,
+        p_amount_cents: -refundAmount
+      });
+
+    if (rpcError) {
+      console.error('RPC failed during refund:', rpcError);
+      throw rpcError;
+    }
+
+    // Record refund transaction
+    await supabaseAdmin
+      .from('wallet_transactions')
+      .insert({
+        user_id: userId,
+        type: 'refund',
+        amount_cents: -refundAmount,
+        balance_after: newBalance,
+        metadata: {
+          stripe_charge_id: charge.id,
+          stripe_payment_intent: paymentIntentId,
+          refund_reason: 'customer_request',
+          original_transaction_id: originalTx.id
+        }
+      });
+
+    console.log(`✅ Processed refund of ${refundAmount} cents for user ${userId}`);
+
+  } catch (error: any) {
+    console.error('Error in handleChargeRefunded:', error);
+  }
+}
+
+async function handleDisputeCreated(dispute: Stripe.Dispute) {
+  try {
+    const chargeId = dispute.charge as string;
+    
+    console.log(`⚠️ Dispute created for charge: ${chargeId}`);
+
+    // Find the transaction and mark it as disputed
+    await supabaseAdmin
+      .from('wallet_transactions')
+      .update({
+        metadata: {
+          ...dispute,
+          status: 'disputed',
+          disputed_at: new Date().toISOString()
+        }
+      })
+      .eq('metadata->>stripe_charge_id', chargeId)
+      .eq('type', 'credit_purchase');
+
+    // TODO: You might want to freeze the trainer's pending earnings
+    // or take other business logic actions here
+
+  } catch (error: any) {
+    console.error('Error in handleDisputeCreated:', error);
+  }
+}
+
+// Helper function to get current wallet balance
+async function getWalletBalance(userId: string): Promise<number> {
+  const { data, error } = await supabaseAdmin
+    .from('user_wallets')
+    .select('balance_cents')
+    .eq('user_id', userId)
+    .single();
+
+  if (error) {
+    console.error('Error getting wallet balance:', error);
+    return 0;
+  }
+
+  return data?.balance_cents || 0;
 }

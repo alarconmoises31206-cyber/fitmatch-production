@@ -1,7 +1,11 @@
-'use client';
+﻿// src/components/LeadsPageContent.tsx
 import React from 'react';
-import LeadsPageContent from '@/components/LeadsPageContent';
 
-export default function LeadsPage() {
-  return <LeadsPageContent />;
+export default function LeadsPageContent() {
+  return (
+    <div>
+      <h1>Leads Page</h1>
+      <p>Leads content will go here</p>
+    </div>
+  );
 }

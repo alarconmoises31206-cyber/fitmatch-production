@@ -1,4 +1,4 @@
-// Anti-leakage scanner utility
+﻿// Anti-leakage scanner utility
 
 // EXPORT this interface - keep only this one
 export interface DetectionResult {
@@ -93,10 +93,10 @@ class AntiLeakageScanner {
     const channels = new Set(detections.map(d => d.channelType));
     
     if (channels.has('email') || channels.has('phone') || channels.has('social')) {
-      return "⚠️ For paid questions: Stay on FitMatch to remain protected. Off-platform payments cannot be refunded or monitored.";
+      return "âš ï¸ For paid questions: Stay on FitMatch to remain protected. Off-platform payments cannot be refunded or monitored.";
     }
     
-    return "⚠️ Please keep all communication and payments for paid questions on FitMatch to ensure protection and support.";
+    return "âš ï¸ Please keep all communication and payments for paid questions on FitMatch to ensure protection and support.";
   }
 }
 

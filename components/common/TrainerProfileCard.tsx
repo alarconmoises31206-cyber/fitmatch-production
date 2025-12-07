@@ -1,8 +1,8 @@
-﻿import { 
-  VerificationStatus, 
-  VERIFICATION_BADGE_TEXTS, 
+﻿import {
+  VerificationStatus,
+  VERIFICATION_BADGE_TEXTS,
   VERIFICATION_COLORS,
-  VERIFICATION_TOOLTIPS 
+  VERIFICATION_TOOLTIPS
 } from '@/lib/types/verification';
 
 interface TrainerProfileCardProps {
@@ -13,28 +13,19 @@ interface TrainerProfileCardProps {
     headline?: string;
     specialties?: string[];
     verified_status?: VerificationStatus;
-    // Add other fields you might have
     avatar_url?: string;
     bio?: string;
     experience_years?: number;
     hourly_rate?: number;
   };
-  score: number;
+  onReveal?: () => void;
+  revealed?: boolean;
 }
 
-export default function TrainerProfileCard({ trainer, score }: TrainerProfileCardProps) {
-  const displaySpecialties = trainer.specialties || ['Strength Training', 'Cardio', 'Wellness'];
-  
-  // Debug log
-  console.log('TrainerProfileCard data:', { 
-    trainer, 
-    verified_status: trainer.verified_status,
-    hasVerifiedStatus: !!trainer.verified_status 
-  });
-  
+export default function TrainerProfileCard({ trainer, onReveal, revealed = false }: TrainerProfileCardProps) {
   const verificationBadge = trainer.verified_status && VERIFICATION_BADGE_TEXTS[trainer.verified_status];
-  const verificationColor = trainer.verified_status ? VERIFICATION_COLORS[trainer.verified_status] : '';
-  const verificationTooltip = trainer.verified_status ? VERIFICATION_TOOLTIPS[trainer.verified_status] : '';
+  const verificationColor = trainer.verified_status ? VERIFICATION_COLORS[trainer.verified_status] : 'gray';
+  const verificationTooltip = trainer.verified_status ? VERIFICATION_TOOLTIPS[trainer.verified_status] : 'Not verified';
 
   return (
     <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -48,59 +39,78 @@ export default function TrainerProfileCard({ trainer, score }: TrainerProfileCar
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-gray-900">
-                {trainer.first_name} {trainer.last_name}{trainer.verified_status && trainer.verified_status !== 'unverified' && (
-  <span 
-    className={ml-2 text-xs px-2 py-1 rounded-full  + 
-      (trainer.verified_status === 'verified' ? 'bg-green-100 text-green-800 border border-green-200' : 
-       trainer.verified_status === 'elite' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
-       'bg-gray-100 text-gray-800 border border-gray-200')}
-  >
-    {trainer.verified_status === 'verified' ? '✓ Verified' : 
-     trainer.verified_status === 'elite' ? '⭐ Elite' : ''}
-  </span>
-)}
+                {trainer.first_name} {trainer.last_name}
+                {trainer.verified_status && trainer.verified_status !== 'unverified' && (
+                  <span
+                    className={`ml-2 text-xs px-2 py-1 rounded-full ${
+                      trainer.verified_status === 'verified' 
+                        ? 'bg-green-100 text-green-800 border border-green-200' 
+                        : trainer.verified_status === 'elite' 
+                        ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' 
+                        : 'bg-gray-100 text-gray-800 border border-gray-200'
+                    }`}
+                  >
+                    {trainer.verified_status === 'verified' ? '✓ Verified' :
+                     trainer.verified_status === 'elite' ? '⭐ Elite' : ''}
+                  </span>
+                )}
               </h3>
-              {verificationBadge && (
-                <div 
-                  className={`text-xs font-medium px-2 py-1 rounded-full ${verificationColor} bg-opacity-10 border ${verificationColor.replace('text', 'border')} border-opacity-30`}
-                  title={verificationTooltip}
-                >
-                  {verificationBadge}
-                </div>
-              )}
             </div>
-            <p className="text-sm text-gray-500">
-              {trainer.headline || 'Certified Fitness Trainer'}
-            </p>
+            {trainer.headline && (
+              <p className="text-sm text-gray-600 mt-1">{trainer.headline}</p>
+            )}
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-lg font-bold text-blue-600">
-            {Math.round(score)}%
+        
+        {onReveal && !revealed && (
+          <button
+            onClick={onReveal}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+          >
+            Reveal
+          </button>
+        )}
+      </div>
+
+      {trainer.specialties && trainer.specialties.length > 0 && (
+        <div className="mb-3">
+          <div className="flex flex-wrap gap-2">
+            {trainer.specialties.map((specialty, idx) => (
+              <span
+                key={idx}
+                className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded"
+              >
+                {specialty}
+              </span>
+            ))}
           </div>
-          <div className="text-xs text-gray-500">Match</div>
         </div>
+      )}
+
+      <div className="text-sm text-gray-700 space-y-1">
+        {trainer.experience_years && (
+          <p>Experience: {trainer.experience_years} years</p>
+        )}
+        {trainer.hourly_rate && (
+          <p>Rate: ${trainer.hourly_rate}/hour</p>
+        )}
+        {trainer.bio && (
+          <p className="mt-2">{trainer.bio}</p>
+        )}
       </div>
 
-      {/* Specialties */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {displaySpecialties.map((spec, idx) => (
-          <span key={idx} className="px-3 py-1 bg-gray-100 text-gray-800 text-sm rounded-full">
-            {spec}
-          </span>
-        ))}
-      </div>
-
-      {/* Action buttons */}
-      <div className="flex gap-2">
-        <button className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
-          View Profile
-        </button>
-        <button className="flex-1 border border-blue-600 text-blue-600 py-2 rounded-lg hover:bg-blue-50 transition">
-          Message
-        </button>
-      </div>
+      {verificationBadge && (
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-xs font-medium px-2 py-1 rounded-full ${verificationColor} bg-opacity-10 border ${verificationColor.replace('text', 'border')} border-opacity-30`}
+              title={verificationTooltip}
+            >
+              {verificationBadge} {trainer.verified_status}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

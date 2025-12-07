@@ -1,0 +1,52 @@
+﻿// pages/api/secure-chat/send.ts - Phase 18 anti-leakage system
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { createSupabaseClient } from '../../../lib/supabase/client';
+import scanner from '../../../lib/anti-leakage/scanner';
+import { logAntiLeakageEvent } from '../../../lib/anti-leakage/logger';
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const { user_id, trainer_id, message } = req.body;
+
+    // Anti-leakage scan - scanner is already instantiated
+    const scanResults = scanner.scan(message); // Returns array
+    
+    // Check if any leaks were detected
+    const hasLeak = scanResults.length > 0 && scanResults[0].channelType !== 'other';
+    
+    if (hasLeak) {
+      // Log the leakage event using logger's interface
+      await logAntiLeakageEvent({
+        userId: user_id,
+        trainerId: trainer_id,
+        messageText: message,
+        detections: scanResults
+      });
+
+      return res.status(403).json({
+        error: 'Contact information not allowed',
+        warning: 'Please keep communication within the platform',
+        channelType: scanResults[0].channelType,
+        detectedPattern: scanResults[0].pattern
+      });
+    }
+
+    // If no leaks, proceed with normal chat flow
+    const supabase = createSupabaseClient();
+    // ... rest of chat logic (simplified for now)
+    
+    // For now, just return success
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Message sent (leak check passed)',
+      scanResults: scanResults
+    });
+  } catch (error) {
+    console.error('Secure chat error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
