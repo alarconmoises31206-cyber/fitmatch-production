@@ -1,0 +1,166 @@
+﻿import React from 'react';
+/* eslint-disable react/prop-types */
+// pages/admin/monitor/reliability.tsx
+
+import { GetServerSideProps } from 'next';
+import { getSupabaseClient } from '../../../infra/adapters/supabase-client.adapter';
+
+interface ReliabilityMetrics {
+  range: string;,
+  availability: number;
+  mttaMinutes: number | null;,
+  mttrMinutes: number | null;
+  incidents: {,
+  critical: number;
+    degraded: number;,
+  resolved: number,
+  }
+  dailyAvailability: Array<[string, number]>;
+}
+
+interface ReliabilityPageProps {
+  metrics: ReliabilityMetrics | null;,
+  adminEmail: string | null,
+}
+
+export default function ReliabilityPage({ metrics, adminEmail }: ReliabilityPageProps) {
+  if (!metrics) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">Reliability Metrics</h1>
+        <p className="text-gray-700">Failed to load metrics.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Reliability Metrics</h1>
+      <p className="text-gray-600 mb-8">Data over the past {metrics.range}.</p>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-700">Availability</h3>
+          <p className="text-3xl font-bold text-blue-600 mt-2">{metrics.availability}%</p>
+          <p className="text-sm text-gray-500 mt-1">Uptime</p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-700">MTTA</h3>
+          <p className="text-3xl font-bold text-green-600 mt-2">
+            {metrics.mttaMinutes ? `${metrics.mttaMinutes} min` : 'N/A'}
+          </p>
+          <p className="text-sm text-gray-500 mt-1">Mean Time to Acknowledge</p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-700">MTTR</h3>
+          <p className="text-3xl font-bold text-purple-600 mt-2">
+            {metrics.mttrMinutes ? `${metrics.mttrMinutes} min` : 'N/A'}
+          </p>
+          <p className="text-sm text-gray-500 mt-1">Mean Time to Resolve</p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-700">Incidents</h3>
+          <p className="text-3xl font-bold text-orange-600 mt-2">{metrics.incidents.critical + metrics.incidents.degraded}</p>
+          <p className="text-sm text-gray-500 mt-1">Critical: {metrics.incidents.critical}, Degraded: {metrics.incidents.degraded}</p>
+        </div>
+      </div>
+
+      {/* Daily Availability Chart */}
+      <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-10">
+        <h2 className="text-xl font-bold mb-4">Daily Availability Trend</h2>
+        <div className="h-64 flex items-end space-x-1">
+          {metrics.dailyAvailability.slice(-30).map(([date, avail]) => (
+            <div key={date} className="flex flex-col items-center flex-1">
+              <div 
+                className="w-full bg-blue-500 rounded-t hover:bg-blue-700 transition-colors"
+                style={{ height: `${avail}%` }}
+                title={`${date}: ${avail}%`}
+              ></div>
+              <span className="text-xs text-gray-500 mt-1">{new Date(date).getDate()}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-sm text-gray-500 mt-4">Last 30 days</p>
+      </div>
+
+      {/* Export Section */}
+      <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        <h2 className="text-xl font-bold mb-4">Export Report</h2>
+        <div className="flex space-x-4">
+          <button
+            onClick={() => {
+  
+  const csv: any= `Range,Availability,MTTA,MTTR,Critical,Degraded,Resolved\n${metrics.range},${metrics.availability},${metrics.mttaMinutes},${metrics.mttrMinutes},${metrics.incidents.critical},${metrics.incidents.degraded},${metrics.incidents.resolved}`;
+              const blob: any= new Blob([csv], { type: 'text/csv' })
+              const url: any= window.URL.createObjectURL(blob)
+              const a: any= document.createElement('a')
+              a.href = url;
+              a.download = `reliability-${new Date().toISOString().split('T')[0]}.csv`;
+              a.click()
+            }}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={() => {
+  
+  const summary: any= `Over the past ${metrics.range}, availability was ${metrics.availability}% with ${metrics.incidents.critical} critical incidents. MTTA ${metrics.mttaMinutes ? metrics.mttaMinutes + ' minutes' : 'N/A'}.`;
+              navigator.clipboard.writeText(summary)
+              alert('Summary copied to clipboard.')
+            }}
+            className="bg-gray-500 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded"
+          >
+            Copy Summary
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  
+  const supabase: any= getSupabaseClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  
+  if (!session) {
+    return { redirect: { destination: '/auth/login', permanent: false } }
+  }
+
+  const adminEmails: any= process.env.ADMIN_EMAILS?.split(',') || [];
+  if (!adminEmails.includes(session.user.email)) {
+    return { redirect: { destination: '/admin/monitor', permanent: false } }
+  }
+
+  try {
+    // Fetch metrics from internal API
+    const baseUrl: any= process.env.NEXT_PUBLIC_BASE_URL || `http://${context.req.headers.host}`;
+    const res: any= await fetch(`${baseUrl}/api/monitor/metrics`, {
+      headers: { Cookie: context.req.headers.cookie || '' },
+    })
+    
+    if (!res.ok) {
+      throw new Error('Failed to fetch metrics')
+    }
+    
+    const metrics: any= await res.json()
+    
+    return {
+      props: {
+        metrics,
+        adminEmail: session.user.email,
+      },
+    }
+  } catch (error) {
+    console.error('Error loading metrics:', error)
+    return {
+      props: {,
+  metrics: null,
+        adminEmail: session.user.email,
+      },
+    }
+  }
+}
+

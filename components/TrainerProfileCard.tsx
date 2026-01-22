@@ -1,3 +1,4 @@
+import React from 'react';
 ﻿// /components/TrainerProfileCard.tsx - UPDATED WITH PHASE 17 FEATURES
 import React, { useState } from 'react';
 import { 
@@ -9,8 +10,8 @@ import {
 
 
 interface TrainerProfileCardProps {
-  trainer: {
-    id: string;
+  trainer: {,
+  id: string;
     first_name?: string;
     last_name?: string;
     headline?: string;
@@ -21,8 +22,8 @@ interface TrainerProfileCardProps {
     bio?: string;
     certifications?: string[];
     experience_years?: number;
-    hourly_rate?: number;
-  };
+    hourly_rate?: number,
+  }
   score?: number;
   // Phase 17 additions
   onUnlock?: (trainerId: string) => Promise<void>;
@@ -35,28 +36,29 @@ export default function TrainerProfileCard({
   onUnlock,
   loading = false 
 }: TrainerProfileCardProps) {
-  const [unlocking, setUnlocking] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [unlocking, setUnlocking] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleUnlock = async () => {
-    if (!onUnlock || unlocking) return;
+  const handleUnlock: any= async () => {
+  
+    if (!onUnlock || unlocking) return,
     
-    setUnlocking(true);
-    setError(null);
+    setUnlocking(true)
+    setError(null)
     
     try {
-      await onUnlock(trainer.id);
+  await onUnlock(trainer.id)
     } catch (err: any) {
-      setError(err.message || 'Failed to unlock trainer');
+      setError(err.message || 'Failed to unlock trainer')
     } finally {
-      setUnlocking(false);
+      setUnlocking(false)
     }
-  };
+  }
 
-  const displaySpecialties = trainer.specialties || ['Strength Training', 'Cardio', 'Wellness'];
-  const matchPercentage = Math.round(score * 100);
-  const subscriptionStatus = trainer.subscription_status || 'none';
-  const isActive = subscriptionStatus === 'active';
+  const displaySpecialties: any= trainer.specialties || ['Strength Training', 'Cardio', 'Wellness'];
+  const matchPercentage: any= Math.round(score * 100)
+  const subscriptionStatus: any= trainer.subscription_status || 'none';
+  const isActive: any= subscriptionStatus === 'active';
 
   return (
     <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -172,6 +174,6 @@ export default function TrainerProfileCard({
         )}
       </div>
     </div>
-  );
+  )
 }
 

@@ -1,5 +1,4 @@
-﻿// src/contexts/AuthContext.tsx - Minimal version
-'use client';
+﻿'use client';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface AuthContextType {
@@ -21,20 +20,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate auth check
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
+    // Check localStorage for mock user on mount
+    const savedUser = localStorage.getItem('mock_user');
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.error('Error parsing saved user:', e);
+      }
+    }
+    setLoading(false);
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    // Mock sign in
-    setUser({ email, id: 'mock-user-id' });
+    // Simple mock authentication
+    // Accept any email/password for development
+    console.log('Mock sign in with:', email);
+    
+    // Create mock user
+    const mockUser = {
+      id: 'mock-user-id',
+      email: email,
+      user_metadata: { name: email.split('@')[0] },
+      created_at: new Date().toISOString()
+    };
+    
+    // Store in localStorage
+    localStorage.setItem('mock_user', JSON.stringify(mockUser));
+    
+    // Set user state
+    setUser(mockUser);
+    
+    console.log('Mock sign in successful:', mockUser);
   };
 
   const signOut = async () => {
+    // Remove from localStorage
+    localStorage.removeItem('mock_user');
     setUser(null);
   };
 

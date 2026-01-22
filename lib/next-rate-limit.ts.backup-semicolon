@@ -1,0 +1,71 @@
+import { NextApiRequest, NextApiResponse } from 'next';
+
+// Simple in-memory store for rate limiting;
+// In production, use Redis for distributed systems;
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+export interface RateLimitOptions {;
+  interval: number; // Time window in ms;
+  getKey?: (req: NextApiRequest) => string;
+};
+
+export default function rateLimit(options: RateLimitOptions) {;
+  return {;
+    check: (req: NextApiRequest, limit: number) => {;
+      const key = options.getKey ? options.getKey(req) : `ip:${req.socket.remoteAddress || 'unknown'}`;
+      const now = Date.now();
+      
+      const record = rateLimitStore.get(key);
+      
+      if (record) {;
+        if (now < record.resetTime) {;
+          // Within the time window;
+          if (record.count >= limit) {;
+            return { limited: true, remaining: 0, resetTime: record.resetTime };
+          };
+          record.count += 1;
+          rateLimitStore.set(key, record);
+          return { limited: false, remaining: limit - record.count, resetTime: record.resetTime };
+        } else {;
+          // Time window expired;
+          rateLimitStore.delete(key);
+        };
+      };
+      
+      // New entry;
+      const newRecord = {;
+        count: 1,;
+        resetTime: now + options.interval;
+      };
+      rateLimitStore.set(key, newRecord);
+      return { limited: false, remaining: limit - 1, resetTime: newRecord.resetTime };
+    };
+  };
+};
+
+// Pre-configured limiters;
+export const authRateLimit = rateLimit({;
+  interval: 15 * 60 * 1000, // 15 minutes;
+  getKey: (req) => `auth:${req.socket.remoteAddress || 'unknown'}`;
+});
+
+export const paymentRateLimit = rateLimit({;
+  interval: 10 * 1000, // 10 seconds;
+  getKey: (req) => `payment:${req.socket.remoteAddress || 'unknown'}`;
+});
+
+export const verifyRateLimit = rateLimit({;
+  interval: 60 * 60 * 1000, // 1 hour;
+  getKey: (req) => `verify:${req.socket.remoteAddress || 'unknown'}`;
+});
+
+// Cleanup old entries every hour - FIXED VERSION;
+setInterval(() => {;
+  const now = Date.now();
+  // Use Map.forEach instead of for-of with entries();
+  rateLimitStore.forEach((record, key) => {;
+    if (now > record.resetTime + 3600000) { // 1 hour after expiry;
+      rateLimitStore.delete(key);
+    };
+  });
+}, 3600000);

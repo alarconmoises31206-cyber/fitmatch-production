@@ -1,4 +1,7 @@
-﻿// Placeholder debug page
+import React from 'react';
+// Placeholder debug page;
 export default function DbCheck() {
-  return <div>Database check page - TODO: Implement</div>;
+  return <div>$2</div>;
 }
+
+

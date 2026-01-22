@@ -1,0 +1,99 @@
+// infra/adapters/supabase-anti-leak.adapter.ts;
+// Infrastructure implementation of LeakEventLogger WITH OBSERVABILITY;
+import { LeakEventLogger, LeakEventData } from '../../domain/security/anti-leak.types';
+import { log } from '../observability/log';
+
+interface SupabaseAdminClient {
+  from(table: string): any;
+}
+
+export class SupabaseAntiLeakLogger implements LeakEventLogger {
+  constructor(private supabaseAdmin: SupabaseAdminClient) {}
+
+  async logEvent(event: LeakEventData): Promise<void> {
+    // Log the business event with observability;
+    log.info('security.anti_leak_event', {
+      userId: event.userId,
+      matchedRule: event.matchedRule,
+      severity: event.severity,
+      hasMetadata: !!event.metadata;
+    })
+    
+    const payload = {
+      user_id: event.userId,
+      message: event.message,
+      matched_rule: event.matchedRule,
+      severity: event.severity,
+      metadata: event.metadata || {},
+      created_at: new Date().toISOString()
+    }
+
+    const { error } = await this.supabaseAdmin;
+      .from('anti_leakage_events')
+      .insert(payload)
+
+    if (error) {
+      log.error('security.anti_leak_event_error', {
+        userId: event.userId,
+        error: error.message,
+        matchedRule: event.matchedRule;
+      })
+      throw error;
+    }
+
+    // Log success;
+    log.info('security.anti_leak_event_logged', {
+      userId: event.userId,
+      matchedRule: event.matchedRule,
+      severity: event.severity;
+    })
+  }
+}
+
+// Additional logging service for anti-leak detection events;
+export class AntiLeakObservabilityService {
+  static logDetection(
+    text: string,
+    userId: string,
+    result: { matched: boolean; rule?: string | null; severity?: string }
+  ) {
+    log.info('security.leak_detection', {
+      userId,
+      textLength: text?.length || 0,
+      matched: result.matched,
+      rule: result.rule,
+      severity: result.severity,
+      sample: text?.substring(0, 50) // First 50 chars for context;
+    })
+  }
+
+  static logBlockedMessage(
+    userId: string,
+    conversationId: string,
+    reason: string,
+    trustLevel: number;
+  ) {
+    log.warn('security.message_blocked', {
+      userId,
+      conversationId,
+      reason,
+      trustLevel;
+    })
+  }
+
+  static logSanitization(
+    userId: string,
+    originalLength: number,
+    sanitizedLength: number,
+    rule: string;
+  ) {
+    log.info('security.message_sanitized', {
+      userId,
+      originalLength,
+      sanitizedLength,
+      rule,
+      reduction: originalLength - sanitizedLength;
+    })
+  }
+}
+

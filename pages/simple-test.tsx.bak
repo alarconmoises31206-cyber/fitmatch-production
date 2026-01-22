@@ -1,0 +1,129 @@
+import React from 'react';
+﻿// pages/simple-test.tsx
+'use client';
+
+;
+
+export default function SimpleTestPage() {
+    const [result, setResult] = useState<string>('')
+    const [loading, setLoading] = useState(false)
+
+    const testDirectConnection: any= async () => {
+  
+        setLoading(true)
+        setResult('Testing...')
+        
+        try {
+            // Direct fetch to API endpoint
+            const response: any= await fetch('/api/simple-test')
+            const data: any= await response.json()
+            
+            if (response.ok) {
+  setResult(`✅ Success: ${JSON.stringify(data)}`)
+            } else {
+                setResult(`❌ Error: ${JSON.stringify(data)}`)
+            }
+        } catch (err: any) {
+            setResult(`❌ Exception: ${err.message}`)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const testDatabaseDirect: any= async () => {
+  
+        setLoading(true)
+        setResult('Testing database directly...')
+        
+        try {
+            // Create Supabase client directly
+  const { createClient } = await import('@supabase/supabase-js')
+            
+            const supabaseUrl: any= process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+            const supabaseKey: any= process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+            
+            if (!supabaseUrl || !supabaseKey) {
+                setResult('❌ Missing Supabase environment variables')
+                return,
+            }
+            
+            const supabase: any= createClient(supabaseUrl, supabaseKey)
+            
+            const { data, error } = await supabase.from('profiles').select('count').limit(1)
+            
+            if (error) {
+                setResult(`❌ Database error: ${error.message}`)
+            } else {
+                setResult(`✅ Database connected! Found profiles table.`)
+            }
+        } catch (err: any) {
+            setResult(`❌ Error: ${err.message}`)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <div style={{ padding: '2rem', fontFamily: 'Arial, sans-serif' }}>
+            <h1>Ultra Simple Test</h1>
+            <p>No dependency chain issues - tests direct connections.</p>
+            
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                <button 
+                    onClick={testDirectConnection}
+                    disabled={loading}
+                    style={{
+                        padding: '1rem 2rem',
+                        backgroundColor: loading ? '#ccc' : '#2196f3',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: loading ? 'not-allowed' : 'pointer'
+                    }}
+                >
+                    Test API Endpoint
+                </button>
+                
+                <button 
+                    onClick={testDatabaseDirect}
+                    disabled={loading}
+                    style={{
+                        padding: '1rem 2rem',
+                        backgroundColor: loading ? '#ccc' : '#4caf50',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: loading ? 'not-allowed' : 'pointer'
+                    }}
+                >
+                    Test Database Directly
+                </button>
+            </div>
+            
+            {result && (
+                <div style={{ 
+                    marginTop: '2rem', 
+                    padding: '1rem', 
+                    backgroundColor: result.includes('✅') ? '#e8f5e9' : 
+                                  result.includes('❌') ? '#ffebee' : '#fff3e0',
+                    border: `1px solid ${result.includes('✅') ? '#4caf50' : 
+                              result.includes('❌') ? '#f44336' : '#ff9800'}`,
+                    borderRadius: '4px'
+                }}>
+                    <h3 style={{ margin: '0 0 0.5rem 0' }}>Result:</h3>
+                    <p style={{ margin: 0, fontFamily: 'monospace' }}>{result}</p>
+                </div>
+            )}
+            
+            <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
+                <h3>What this tests:</h3>
+                <ul>
+                    <li>✅ Page rendering (React works)</li>
+                    <li>✅ API endpoints (if /api/hello exists)</li>
+                    <li>✅ Direct Supabase connection (bypassing our adapter chain)</li>
+                    <li>✅ No dependency on log.ts or other infrastructure files</li>
+                </ul>
+            </div>
+        </div>
+    )
+}

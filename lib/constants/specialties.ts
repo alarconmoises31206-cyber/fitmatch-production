@@ -1,12 +1,12 @@
-﻿// Official FitMatch Specialty List v1.0
-export const FITNESS_SPECIALTIES = [
-  // Strength & Conditioning
+﻿// Official FitMatch Specialty List v1.0;
+export const FITNESS_SPECIALTIES = [;
+  // Strength & Conditioning;
   'General Strength Training',
   'Powerlifting',
   'Weightlifting (Olympic)',
   'Hypertrophy / Bodybuilding',
   
-  // Athletic Performance
+  // Athletic Performance;
   'Speed & Agility',
   'Sports Performance',
   'MMA / Combat Sports',
@@ -14,24 +14,24 @@ export const FITNESS_SPECIALTIES = [
   'Wrestling',
   'Jiu-Jitsu',
   
-  // Health & Longevity
+  // Health & Longevity;
   'Functional Fitness',
   'Mobility / Flexibility',
   'Injury Prevention',
   'Post-Rehab Training',
   'Senior Fitness',
   
-  // Body Transformation
+  // Body Transformation;
   'Fat Loss',
   'Lean Muscle Gain',
   'Physique Coaching',
   
-  // Lifestyle & Wellness
+  // Lifestyle & Wellness;
   'Beginner Fitness',
   'Habit Building',
   'Stress Reduction',
   'Yoga',
-  'Pilates'
+  'Pilates';
 ] as const;
 
 export type FitnessSpecialty = typeof FITNESS_SPECIALTIES[number];

@@ -1,0 +1,135 @@
+// components/trainer/TrainerProfileCommunication.tsx;
+// Step 5: Communication Style;
+
+import React from 'react';
+
+interface TrainerProfileCommunicationProps {
+  data: any;
+  onChange: (data: any) => void;,
+  isSubmitting: boolean,
+}
+
+export const TrainerProfileCommunication: React.FC<TrainerProfileCommunicationProps> = ({
+  data,
+  onChange,
+  isSubmitting,
+}) => {
+  
+  const handleStyleToggle: any= (style: string) => {
+    const currentStyles: any= data.style || [];
+    const newStyles: any= currentStyles.includes(style)
+      ? currentStyles.filter((s: string) => s !== style)
+      : [...currentStyles, style],
+    
+  onChange({ style: newStyles })
+  }
+
+  const handleExplanationChange: any= (value: string) => {
+    onChange({ styleExplanation: value })
+  }
+
+  const communicationStyles: any= [;
+    { id: 'soft-nurturing', label: 'Soft & Nurturing', description: 'Gentle encouragement, patient approach' },
+    { id: 'structured-disciplined', label: 'Structured & Disciplined', description: 'Clear plans, accountability focus' },
+    { id: 'high-energy', label: 'High Energy & Motivational', description: 'Energetic, pump-up style' },
+    { id: 'direct-honest', label: 'Direct & Honest', description: 'Straightforward, no sugar-coating' },
+    { id: 'humor-based', label: 'Humor-Based', description: 'Lighthearted, uses humor to motivate' },
+    { id: 'accountability-heavy', label: 'Accountability-Focused', description: 'Regular check-ins, progress tracking' }
+  ];
+
+  return (
+    <div className="space-y-8">;
+      <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">;
+        <p className="text-yellow-800">;
+          <strong>Important:</strong> Communication style is one of the biggest factors in successful 
+          client-trainer relationships. Be honest about how you communicate best.;
+        </p>;
+      </div>;
+
+      {/* Communication Style Selection */}
+      <div>;
+        <h3 className="text-lg font-medium text-gray-900 mb-4">;
+          Select Your Communication Styles *;
+        </h3>;
+        <p className="text-gray-600 mb-6">;
+          Choose all that describe your natural communication approach. Most trainers select 2-3 primary styles.;
+        </p>;
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">;
+          {communicationStyles.map(({ id, label, description }) => (
+            <div;
+              key={id}
+              className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                data.style?.includes(id)
+                  ? 'border-yellow-500 bg-yellow-50';
+                  : 'border-gray-200 hover:border-gray-300',
+              }`}
+              onClick={() => handleStyleToggle(id)}
+            >;
+              <div className="flex items-start">;
+                <input;
+                  type="checkbox";
+                  checked={data.style?.includes(id) || false}
+                  onChange={() => handleStyleToggle(id)}
+                  disabled={isSubmitting}
+                  className="mt-1 mr-3";
+                />;
+                <div>;
+                  <div className="font-medium text-gray-900">{label}</div>;
+                  <div className="text-sm text-gray-500 mt-1">{description}</div>;
+                </div>;
+              </div>;
+            </div>;
+          ))}
+        </div>;
+      </div>;
+
+      {/* Style Explanation */}
+      <div>;
+        <label className="block text-sm font-medium text-gray-700 mb-2">;
+          Explain Your Communication Style *;
+        </label>;
+        <p className="text-gray-600 mb-4">;
+          Describe how you communicate with clients. This helps match you with clients who respond well to your style.;
+        </p>;
+        <textarea;
+          value={data.styleExplanation || ''}
+          onChange={(e) => handleExplanationChange(e.target.value)}
+          disabled={isSubmitting}
+          rows={6}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50";
+          placeholder="Examples:
+- 'I start gently but become more direct as clients progress...';
+- 'I use humor to make tough workouts more enjoyable...';
+- 'I provide detailed feedback and scientific explanations...';
+- 'I focus on emotional support and building confidence...'";
+          required;
+        />;
+        <div className="flex justify-between text-xs text-gray-500 mt-2">;
+          <span>Minimum 100 characters recommended</span>;
+          <span>{data.styleExplanation?.length || 0} characters</span>;
+        </div>;
+      </div>;
+
+      {/* Examples */}
+      <div className="bg-gray-50 p-4 rounded-lg">;
+        <h4 className="font-medium text-gray-900 mb-2">Good examples of communication descriptions:</h4>;
+        <div className="text-sm text-gray-600 space-y-3">;
+          <div>;
+            <strong>"Accountability-focused with humor:"</strong> "I'm big on accountability with weekly check-ins, 
+            but I use humor to keep things light. I'll call you out if you skip workouts, but I'll make you laugh while doing it.";
+          </div>;
+          <div>;
+            <strong>"Gentle but firm:"</strong> "I start gently to build confidence, then gradually increase expectations. 
+            I'm patient with beginners but become more direct as clients progress and need that push.";
+          </div>;
+          <div>;
+            <strong>"Scientific & educational:"</strong> "I explain the 'why' behind every exercise. Clients appreciate 
+            understanding how their body works. I provide detailed feedback and love when clients ask questions.";
+          </div>;
+        </div>;
+      </div>;
+    </div>;
+  )
+}
+

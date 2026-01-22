@@ -1,0 +1,12 @@
+﻿{
+  "name": "phase71-integration",
+  "version": "1.0.0",
+  "description": "Phase 71 - System Integration & Wiring",
+  "scripts": {
+    "build": "tsc",
+    "verify": "node scripts/founder-verification.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}

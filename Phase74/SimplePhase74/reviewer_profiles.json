@@ -1,0 +1,99 @@
+﻿{
+    "reviewers":  [
+                      {
+                          "reviewer_type":  "technical_skeptic",
+                          "reviewer_id":  "R1",
+                          "profile":  {
+                                          "skepticism_profile":  {
+                                                                     "default_stance":  "skeptical",
+                                                                     "known_annoyances":  [
+                                                                                              "black-box models",
+                                                                                              "hand-wavy explanations",
+                                                                                              "non-deterministic behavior"
+                                                                                          ]
+                                                                 },
+                                          "background":  {
+                                                             "primary_field":  "software_engineering",
+                                                             "years_experience":  8,
+                                                             "familiarity_with_ai":  "high"
+                                                         },
+                                          "review_capabilities":  {
+                                                                      "can_detect_inconsistencies":  true,
+                                                                      "can_reason_about_algorithms":  true,
+                                                                      "expects_formal_logic":  true
+                                                                  }
+                                      },
+                          "eligibility_checks":  {
+                                                     "is_not_personally_invested":  true,
+                                                     "has_not_received_prior_explanations":  true,
+                                                     "has_not_worked_on_fitmatch":  true
+                                                 },
+                          "bias_risk_assessment":  {
+                                                       "relationship_to_founder":  "none",
+                                                       "risk_of_deference":  "low",
+                                                       "incentive_to_be_supportive":  "low",
+                                                       "notes":  "Former colleague from different company, known for technical rigor"
+                                                   }
+                      },
+                      {
+                          "reviewer_type":  "domain_practitioner",
+                          "reviewer_id":  "R2",
+                          "profile":  {
+                                          "domain":  {
+                                                         "field":  "fitness",
+                                                         "current_role":  "trainer",
+                                                         "years_practice":  12
+                                                     },
+                                          "decision_style":  {
+                                                                 "open_to_systems":  "medium",
+                                                                 "relies_on_intuition":  true
+                                                             },
+                                          "risk_sensitivity":  {
+                                                                   "safety_conscious":  true,
+                                                                   "dislikes_overconfidence":  true
+                                                               }
+                                      },
+                          "eligibility_checks":  {
+                                                     "not_affiliated_with_fitmatch":  true,
+                                                     "actively_practicing":  true,
+                                                     "not_previously_briefed":  true
+                                                 },
+                          "bias_risk_assessment":  {
+                                                       "relationship_to_founder":  "weak",
+                                                       "risk_of_deference":  "medium",
+                                                       "incentive_to_be_supportive":  "low",
+                                                       "notes":  "Professional contact through industry events, no personal relationship"
+                                                   }
+                      },
+                      {
+                          "reviewer_type":  "critical_non_technical",
+                          "reviewer_id":  "R3",
+                          "profile":  {
+                                          "thinking_style":  {
+                                                                 "sensitive_to_confidence_tone":  true,
+                                                                 "asks_why":  true,
+                                                                 "challenges_authority":  true
+                                                             },
+                                          "background":  {
+                                                             "profession":  "Marketing Director",
+                                                             "education_level":  "graduate",
+                                                             "technical_fluency":  "low"
+                                                         },
+                                          "trust_baseline":  {
+                                                                 "initial_trust_in_ai":  "low"
+                                                             }
+                                      },
+                          "eligibility_checks":  {
+                                                     "no_prior_exposure":  true,
+                                                     "not_domain_expert":  true,
+                                                     "not_tech_professional":  true
+                                                 },
+                          "bias_risk_assessment":  {
+                                                       "relationship_to_founder":  "none",
+                                                       "risk_of_deference":  "low",
+                                                       "incentive_to_be_supportive":  "low",
+                                                       "notes":  "No prior connection, found through professional network"
+                                                   }
+                      }
+                  ]
+}

@@ -1,0 +1,87 @@
+{
+    "phase":  "74.9.1",
+    "inventory_date":  "2026-01-13",
+    "surfaces":  [
+                     {
+                         "component":  "index.tsx",
+                         "name":  "Home/Landing",
+                         "system_responsibility":  "presentation",
+                         "route":  "/",
+                         "reviewer_exposure_risk":  "medium",
+                         "status":  "partially_implemented",
+                         "notes":  "Contains \u0027??\u0027 placeholders in \u0027How it works\u0027 section. Needs Phase 74.9 neutralization."
+                     },
+                     {
+                         "component":  "dashboard/index.tsx",
+                         "name":  "Dashboard",
+                         "system_responsibility":  "mixed",
+                         "route":  "/dashboard",
+                         "reviewer_exposure_risk":  "high",
+                         "status":  "partially_implemented",
+                         "notes":  "Contains \u0027??\u0027 placeholders. \u0027Purchase Spin\u0027 button promises functionality that needs boundary disclosure. AI Match Spin may be partially implemented."
+                     },
+                     {
+                         "component":  "matches.tsx",
+                         "name":  "Trainer Matches",
+                         "system_responsibility":  "presentation",
+                         "route":  "/matches",
+                         "reviewer_exposure_risk":  "medium",
+                         "status":  "partially_implemented",
+                         "notes":  "Uses mock data with localStorage. \u0027View Profile\u0027 buttons alert \u0027feature not implemented\u0027. Needs boundary disclosure."
+                     },
+                     {
+                         "component":  "profile.tsx",
+                         "name":  "User Profile",
+                         "system_responsibility":  "presentation",
+                         "route":  "/profile",
+                         "reviewer_exposure_risk":  "low",
+                         "status":  "placeholder",
+                         "notes":  "Smoke test page with role switcher. Clearly labeled but needs Phase 74.9 boundary disclosure."
+                     },
+                     {
+                         "component":  "questionnaire.tsx",
+                         "name":  "Questionnaire",
+                         "system_responsibility":  "mixed",
+                         "route":  "/questionnaire",
+                         "reviewer_exposure_risk":  "medium",
+                         "status":  "partially_implemented",
+                         "notes":  "Uses localStorage instead of backend. Functional but limited persistence. Needs boundary disclosure about data storage limitations."
+                     },
+                     {
+                         "component":  "trainer-dashboard.tsx",
+                         "name":  "Trainer Dashboard",
+                         "system_responsibility":  "future",
+                         "route":  "/trainer-dashboard",
+                         "reviewer_exposure_risk":  "high",
+                         "status":  "placeholder",
+                         "notes":  "References missing component \u0027./components/TrainerDashboard\u0027. This is a broken placeholder that needs Phase 74.9 neutralization."
+                     },
+                     {
+                         "component":  "messages/chat.tsx",
+                         "name":  "Messages/Chat",
+                         "system_responsibility":  "presentation",
+                         "route":  "/messages/chat",
+                         "reviewer_exposure_risk":  "medium",
+                         "status":  "partially_implemented",
+                         "notes":  "Uses localStorage for message persistence. Functional but limited scope."
+                     },
+                     {
+                         "component":  "auth/login.tsx",
+                         "name":  "Login",
+                         "system_responsibility":  "engine",
+                         "route":  "/auth/login",
+                         "reviewer_exposure_risk":  "low",
+                         "status":  "implemented",
+                         "notes":  "Standard auth implementation."
+                     },
+                     {
+                         "component":  "auth/register.tsx",
+                         "name":  "Register",
+                         "system_responsibility":  "engine",
+                         "route":  "/auth/register",
+                         "reviewer_exposure_risk":  "low",
+                         "status":  "implemented",
+                         "notes":  "Standard auth implementation."
+                     }
+                 ]
+}

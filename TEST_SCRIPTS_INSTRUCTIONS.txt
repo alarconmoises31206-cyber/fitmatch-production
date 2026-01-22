@@ -1,0 +1,3 @@
+﻿Add this to your package.json "scripts" section:
+"test-phase57": "tsx scripts/test-phase57.ts",
+"metrics-report": "tsx -e \"import { MetricsEngine } from './infra/reliability/metricsEngine'; async function run() { const metrics = await MetricsEngine.getInstance().getRemediationMetrics(1); console.log('1-hour metrics:', metrics); } run().catch(console.error);\""

@@ -1,0 +1,137 @@
+import React from 'react';
+﻿// pages/matches/index.tsx (example usage)
+import React, { useEffect, useState } from 'react';
+import ExternalTrainerCard from '../../components/external-trainers/ExternalTrainerCard';
+import ExternalContactModal from '../../components/external-trainers/ExternalContactModal';
+import { useExternalMatchmaking, useExternalTrainers } from '../../hooks/useExternalTrainers';
+
+const MatchesPage: React.FC = () => {
+  
+  // Use the matchmaking hook
+  const {
+    matches,
+    loading,
+    error,
+    fetchMatches,
+  hasExternalMatches,
+  } = useExternalMatchmaking({
+    tokenBudget: 10,
+    limit: 10,
+  })
+
+  // Use the external trainers hook
+  const {
+    selectedMatch,
+    isContactModalOpen,
+    handleContactTrainer,
+    handleCloseContactModal,
+    handleSubmitContact,
+    isContacting,
+    contactError,
+  } = useExternalTrainers()
+
+  // Fetch matches on mount
+  useEffect(() => {
+    fetchMatches()
+  }, [fetchMatches])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading matches...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-red-600">Error: {error}</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Your Matches</h1>
+          <p className="text-gray-600 mt-2">
+            {hasExternalMatches 
+              ? 'Includes both FitMatch trainers and external trainers (marked in orange)'
+              : 'Your personalized trainer matches'
+            }
+          </p>
+          
+          {/* Stats */}
+          <div className="mt-4 flex space-x-4">
+            <div className="px-4 py-2 bg-white border rounded-lg">
+              <div className="text-sm text-gray-500">Total Matches</div>
+              <div className="text-xl font-bold">{matches.length}</div>
+            </div>
+            {hasExternalMatches && (
+              <div className="px-4 py-2 bg-orange-50 border border-orange-200 rounded-lg">
+                <div className="text-sm text-orange-600">External Trainers</div>
+                <div className="text-xl font-bold text-orange-700">
+                  {matches.filter(m => m.isExternal).length}
+                </div>
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* Matches List */}
+        <div className="space-y-6">
+          {matches.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-lg border">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No matches found</h3>
+              <p className="text-gray-600">Try adjusting your preferences or check back later.</p>
+            </div>
+          ) : (
+            matches.map((match, index) => (
+              <ExternalTrainerCard
+                key={`${match.trainerId}-${index}`}
+                match={match}
+                onContact={() => handleContactTrainer(match)}
+                onViewDetails={() => {
+  
+                  // Navigate to trainer details page
+  console.log('View details for:', match.trainerId)
+                }}
+              />
+            ))
+          )}
+        </div>
+
+        {/* Contact Modal */}
+        {selectedMatch && (
+          <ExternalContactModal
+            isOpen={isContactModalOpen}
+            onClose={handleCloseContactModal}
+            onSubmit={handleSubmitContact}
+            trainerName={selectedMatch.isExternal ? 'External Trainer' : 'FitMatch Trainer'}
+            isExternal={selectedMatch.isExternal === true}
+            characterLimit={selectedMatch.isExternal ? 500 : undefined}
+          />
+        )}
+
+        {/* Footer Info */}
+        {hasExternalMatches && (
+          <div className="mt-8 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <h3 className="font-medium text-orange-800 mb-2">About External Trainers</h3>
+            <ul className="text-sm text-orange-700 space-y-1">
+              <li>• External trainers are not yet on FitMatch</li>
+              <li>• You can send one introductory message for free</li>
+              <li>• They must join FitMatch to reply to your message</li>
+              <li>• External trainers help solve the "cold start" problem</li>
+              <li>• All messages are monitored for safety</li>
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default MatchesPage;

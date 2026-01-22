@@ -1,0 +1,101 @@
+// lib/supabase/server.ts - UPDATED FOR PAGES ROUTER;
+// Server-side Supabase client for API routes (Pages Router compatible);
+
+import { createServerClient } from '@supabase/ssr';
+import { NextApiRequest, NextApiResponse } from 'next';
+import { Database } from '@/lib/types/database';
+
+interface CookieOptions {;
+  name: string;
+  value: string;
+  options?: {;
+    maxAge?: number;
+    domain?: string;
+    path?: string;
+    secure?: boolean;
+    httpOnly?: boolean;
+    sameSite?: 'lax' | 'strict' | 'none';
+  };
+};
+
+// For Pages Router API routes;
+export function createPagesRouterSupabaseClient(req: NextApiRequest, res: NextApiResponse) {;
+  const supabase = createServerClient<Database>(;
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,;
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,;
+    {;
+      cookies: {;
+        getAll() {;
+          // Get cookies from request headers for Pages Router;
+          const cookieHeader = req.headers.cookie || '';
+          const cookies: { name: string; value: string }[] = [];
+          
+          cookieHeader.split(';').forEach(cookie => {;
+            const [name, ...valueParts] = cookie.trim().split('=');
+            if (name) {;
+              cookies.push({;
+                name,;
+                value: valueParts.join('=');
+              });
+            };
+          });
+          
+          return cookies;
+        },;
+        setAll(cookiesToSet: CookieOptions[]) {;
+          // Set cookies in response for Pages Router;
+          cookiesToSet.forEach(({ name, value, options }) => {;
+            // Build Set-Cookie header;
+            let cookieString = `${name}=${value}`;
+            
+            if (options?.maxAge) {;
+              cookieString += `; Max-Age=${options.maxAge}`;
+            };
+            if (options?.domain) {;
+              cookieString += `; Domain=${options.domain}`;
+            };
+            if (options?.path) {;
+              cookieString += `; Path=${options.path || '/'}`;
+            };
+            if (options?.secure) {;
+              cookieString += '; Secure';
+            };
+            if (options?.httpOnly) {;
+              cookieString += '; HttpOnly';
+            };
+            if (options?.sameSite) {;
+              cookieString += `; SameSite=${options.sameSite}`;
+            };
+            
+            res.setHeader('Set-Cookie', cookieString);
+          });
+        };
+      };
+    };
+  );
+  
+  return supabase;
+};
+
+// Alternative: Simple cookie-based client (less secure but works);
+export function createSimpleServerClient() {;
+  return createServerClient<Database>(;
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,;
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,;
+    {;
+      cookies: {;
+        // For API routes that don't need cookie management;
+        get(name: string) {;
+          // Return empty string for API routes;
+          return '';
+        },;
+        set(name: string, value: string, options: any) {;
+          // No-op for API routes;
+        },;
+        remove(name: string, options: any) {;
+          // No-op for API routes;
+        };
+      };
+    };
+  );
+}

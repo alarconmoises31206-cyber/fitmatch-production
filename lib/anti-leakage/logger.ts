@@ -1,4 +1,4 @@
-﻿// lib/anti-leakage/logger.ts - Updated for Phase 18
+// lib/anti-leakage/logger.ts - Updated for Phase 18;
 import { createSupabaseClient } from '../supabase/client';
 
 export interface DetectionResult {
@@ -16,14 +16,14 @@ interface LogEventParams {
 
 export async function logAntiLeakageEvent(event: LogEventParams): Promise<boolean> {
   try {
-    const supabase = createSupabaseClient();
+    const supabase = createSupabaseClient()
     
-    // Convert detections to a format suitable for database
-    const hasLeak = event.detections.some(d => d.channelType !== 'other');
-    const firstDetection = event.detections.find(d => d.channelType !== 'other');
+    // Convert detections to a format suitable for database;
+    const hasLeak = event.detections.some(d => d.channelType !== 'other')
+    const firstDetection = event.detections.find(d => d.channelType !== 'other')
     
     if (!hasLeak) {
-      console.log('No leakage detected, skipping log');
+      console.log('No leakage detected, skipping log')
       return true;
     }
 
@@ -36,24 +36,25 @@ export async function logAntiLeakageEvent(event: LogEventParams): Promise<boolea
         detected_text: firstDetection?.matches?.[0] || event.messageText.substring(0, 200),
         action_taken: 'warning',
         event_time: new Date().toISOString()
-      }]);
+      }])
 
     if (error) {
-      console.error('Failed to log leakage event:', error);
+      console.error('Failed to log leakage event:', error)
       return false;
     }
 
-    console.log('✅ Leakage event logged:', {
+    console.log('? Leakage event logged:', {
       userId: event.userId,
       trainerId: event.trainerId,
-      channelType: firstDetection?.channelType
-    });
+      channelType: firstDetection?.channelType,
+    })
     return true;
   } catch (error) {
-    console.error('Error logging leakage event:', error);
+    console.error('Error logging leakage event:', error)
     return false;
   }
 }
 
-// Alias for backward compatibility
+// Alias for backward compatibility;
 export const logLeakageEvent = logAntiLeakageEvent;
+

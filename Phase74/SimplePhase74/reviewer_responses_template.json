@@ -1,0 +1,49 @@
+﻿{
+  "review_session": {
+    "reviewer_id": "",
+    "review_date": "",
+    "time_spent_minutes": null
+  },
+  "responses": {
+    "question_1": {
+      "question": "Why do you think this person ranked #1?",
+      "answer": "",
+      "confidence": 1,
+      "notes": ""
+    },
+    "question_2": {
+      "question": "What tradeoff did the system make?",
+      "answer": "",
+      "confidence": 1,
+      "notes": ""
+    },
+    "question_3": {
+      "question": "Do you agree with the outcome?",
+      "answer": "",
+      "confidence": 1,
+      "notes": ""
+    },
+    "question_4": {
+      "question": "If not, what would you change?",
+      "answer": "",
+      "notes": ""
+    },
+    "question_5": {
+      "question": "Do you trust the system more or less after reading the explanation?",
+      "answer": "",
+      "reasoning": ""
+    }
+  },
+  "confusion_log": {
+    "points_of_confusion": [],
+    "clarity_rating": 1,
+    "suggested_improvements": ""
+  },
+  "overall_assessment": {
+    "trust_before": 1,
+    "trust_after": 1,
+    "confidence_in_explanations": 1,
+    "willingness_to_rely": false,
+    "final_comments": ""
+  }
+}

@@ -1,0 +1,85 @@
+﻿{
+    "Version":  "SimplePhase74-v1",
+    "Configuration":  {
+                          "HardFilters":  [
+                                              "active",
+                                              "verified"
+                                          ],
+                          "Weights":  {
+                                          "Experience":  0.25,
+                                          "Availability":  0.2,
+                                          "Goals":  0.3
+                                      }
+                      },
+    "Trainers":  [
+                     {
+                         "specialties":  [
+                                             "strength",
+                                             "cardio"
+                                         ],
+                         "verified":  true,
+                         "is_active":  true,
+                         "name":  "Alex",
+                         "id":  "trainer-001"
+                     },
+                     {
+                         "specialties":  [
+                                             "yoga",
+                                             "flexibility"
+                                         ],
+                         "verified":  true,
+                         "is_active":  true,
+                         "name":  "Sam",
+                         "id":  "trainer-002"
+                     },
+                     {
+                         "specialties":  [
+                                             "hiit",
+                                             "conditioning"
+                                         ],
+                         "verified":  true,
+                         "is_active":  false,
+                         "name":  "Jordan",
+                         "id":  "trainer-003"
+                     }
+                 ],
+    "Results":  [
+                    {
+                        "TrainerId":  "trainer-001",
+                        "Name":  "Alex",
+                        "Score":  85,
+                        "Rank":  1,
+                        "Explanation":  "Compatible with client goals",
+                        "DeterministicNote":  "Score derived from trainer ID hash"
+                    },
+                    {
+                        "TrainerId":  "trainer-002",
+                        "Name":  "Sam",
+                        "Score":  43,
+                        "Rank":  2,
+                        "Explanation":  "Compatible with client goals",
+                        "DeterministicNote":  "Score derived from trainer ID hash"
+                    }
+                ],
+    "Created":  "2026-01-10 18:30:30",
+    "ResultHash":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "Client":  {
+                   "experience":  "beginner",
+                   "name":  "Test Client",
+                   "id":  "client-test-001",
+                   "goals":  [
+                                 "weight loss",
+                                 "strength"
+                             ]
+               },
+    "Scenario":  "test-replay",
+    "Metadata":  {
+                     "HardFilters":  [
+                                         "active",
+                                         "verified"
+                                     ],
+                     "TrainerCount":  3,
+                     "Deterministic":  true
+                 },
+    "SnapshotId":  "snapshot-20260110-183030-2360"
+}

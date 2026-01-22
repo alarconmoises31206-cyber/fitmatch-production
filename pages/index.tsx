@@ -1,173 +1,98 @@
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { createSupabaseClient } from '../lib/supabase/client';
+﻿import type { NextPage } from 'next'
+import Head from 'next/head'
+import Link from 'next/link'
 
-export default function Home() {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function checkUser() {
-      const { data: { session } } = await createSupabaseClient().auth.getSession();
-      setUser(session?.user || null);
-      setLoading(false);
-    }
-    checkUser();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
+const Home: NextPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">FitMatch</h1>
+      <Head>
+        <title>FitMatch - Find Your Perfect Fitness Trainer Match</title>
+        <meta name="description" content="Find certified fitness trainers using our intelligent matching algorithm" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Hero section */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight lg:text-6xl">
+            Welcome to FitMatch
+          </h1>
+          <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+            Find your perfect fitness trainer match using our intelligent algorithm.
+          </p>
+        </div>
+
+        {/* Main content cards */}
+        <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              <h3 className="text-lg font-medium text-gray-900">Find Trainers</h3>
+              <p className="mt-2 text-sm text-gray-500">
+                Complete our questionnaire to get matched with certified fitness trainers.
+              </p>
+              <div className="mt-4">
+                <Link
+                  href="/questionnaire"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Start Questionnaire
+                </Link>
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              {user ? (
-                <>
-                  <Link 
-                    href="/dashboard" 
-                    className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Go to Dashboard
-                  </Link>
-                  <Link 
-                    href="/auth/login" 
-                    onClick={async () => await createSupabaseClient().auth.signOut()}
-                    className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Sign Out
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link 
-                    href="/auth/login" 
-                    className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Sign In
-                  </Link>
-                  <Link 
-                    href="/auth/register" 
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
-                  >
-                    Sign Up
-                  </Link>
-                </>
-              )}
+          </div>
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              <h3 className="text-lg font-medium text-gray-900">For Trainers</h3>
+              <p className="mt-2 text-sm text-gray-500">
+                Access the trainer dashboard to manage your profile and clients.
+              </p>
+              <div className="mt-4">
+                <Link
+                  href="/trainer-dashboard"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                >
+                  Trainer Dashboard
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              <h3 className="text-lg font-medium text-gray-900">How It Works</h3>
+              <ul className="mt-2 text-sm text-gray-500 list-disc pl-5 space-y-1">
+                <li>Complete our matching questionnaire</li>
+                <li>Get paired with compatible trainers</li>
+                <li>Schedule introductory sessions</li>
+                <li>Begin your fitness journey</li>
+              </ul>
             </div>
           </div>
         </div>
-      </nav>
 
-      {/* Hero Section */}
-      <div className="relative bg-white overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <div className="relative z-10 pb-8 bg-white sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
-            <div className="pt-10 mx-auto max-w-7xl px-4 sm:pt-12 sm:px-6 md:pt-16 lg:pt-20 lg:px-8 xl:pt-28">
-              <div className="sm:text-center lg:text-left">
-                <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
-                  <span className="block">Find your perfect</span>
-                  <span className="block text-blue-600">fitness match</span>
-                </h1>
-                <p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                  Connect with certified trainers who match your goals, personality, and training style. 
-                  Start your fitness journey today.
+        {/* System notice */}
+        <div className="mt-12">
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">
+                  <strong>System Evaluation Mode</strong> • This interface evaluates match recommendation algorithms. Trainer tools, payment systems, and production workflows are out of scope.
+                  <br />
+                  Elements marked with [Demo], [Core], or [Future] indicate implementation status.
                 </p>
-                <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
-                  <div className="rounded-md shadow">
-                    {user ? (
-                      <Link 
-                        href="/dashboard" 
-                        className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10"
-                      >
-                        Go to Dashboard
-                      </Link>
-                    ) : (
-                      <Link 
-                        href="/auth/register" 
-                        className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10"
-                      >
-                        Get Started
-                      </Link>
-                    )}
-                  </div>
-                  <div className="mt-3 sm:mt-0 sm:ml-3">
-                    <Link 
-                      href="/matches" 
-                      className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 md:py-4 md:text-lg md:px-10"
-                    >
-                      Browse Trainers
-                    </Link>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Features Section */}
-      <div className="py-12 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="lg:text-center">
-            <h2 className="text-base text-blue-600 font-semibold tracking-wide uppercase">How it works</h2>
-            <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-              A better way to find trainers
-            </p>
-          </div>
-
-          <div className="mt-10">
-            <div className="space-y-10 md:space-y-0 md:grid md:grid-cols-3 md:gap-x-8 md:gap-y-10">
-              <div className="text-center">
-                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white mx-auto">
-                  <span className="text-xl">??</span>
-                </div>
-                <div className="mt-5">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">Complete Your Profile</h3>
-                  <p className="mt-2 text-base text-gray-500">
-                    Tell us about your fitness goals, preferences, and training style.
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-center">
-                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white mx-auto">
-                  <span className="text-xl">??</span>
-                </div>
-                <div className="mt-5">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">Get Matched</h3>
-                  <p className="mt-2 text-base text-gray-500">
-                    Our algorithm finds trainers who match your specific needs and preferences.
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-center">
-                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white mx-auto">
-                  <span className="text-xl">??</span>
-                </div>
-                <div className="mt-5">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">Start Training</h3>
-                  <p className="mt-2 text-base text-gray-500">
-                    Connect with your matched trainers and begin your fitness journey.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      </main>
     </div>
-  );
+  )
 }
+
+export default Home

@@ -1,67 +1,91 @@
+// lib/antiLeak.ts - Updated to use domain architecture;
+// Bridge file - maintains old API while using new architecture;
+
+import { AntiLeakService, AntiLeakServiceWithLogging } from '../domain/security/anti-leak.service';
+import { SupabaseAntiLeakLogger } from '../infra/adapters/supabase-anti-leak.adapter';
+import type { LeakResult, LeakSeverity } from '../domain/security/anti-leak.types';
+
+// We need the supabaseAdmin from infrastructure;
 import { supabaseAdmin } from './supabaseServer';
 
-export type LeakResult = {
-  matched: boolean;
-  rule: string | null;
-  severity: 'low' | 'medium' | 'high';
-  evidence?: string;
-};
+// Re-export types for backward compatibility;
+export type { LeakResult }
+export type { LeakSeverity }
 
-const patterns = [
-  { name: 'email', re: /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i, severity: 'high' },
-  { name: 'phone', re: /(\+?\d{1,2}[\s-]?)?(\(?\d{3}\)?[\s-]?)?\d{3}[\s-]?\d{4}/, severity: 'high' },
-  { name: 'paypal_venmo', re: /\b(paypal|venmo|cashapp|zelle|paypal.me)\b/i, severity: 'high' },
-  { name: 'social_handle', re: /(?:@)[A-Za-z0-9_]{3,30}/, severity: 'medium' },
-  { name: 'url', re: /(https?:\/\/[^\s]+)/i, severity: 'medium' },
-  { name: 'payment_link', re: /(stripe\.com|buy\.me\/|patreon\.com|ko-fi\.com)/i, severity: 'high' },
-];
+// Create logger instance;
+const logger = new SupabaseAntiLeakLogger(supabaseAdmin)
+const antiLeakService = new AntiLeakServiceWithLogging(logger)
 
+/**;
+ * Legacy function for backward compatibility;
+ */;
 export async function detectLeakage(text: string): Promise<LeakResult> {
-  if (!text || !text.trim()) {
-    return { matched: false, rule: null, severity: 'low' };
-  }
-
-  for (const p of patterns) {
-    const m = text.match(p.re);
-    if (m) {
-      return {
-        matched: true,
-        rule: p.name,
-        severity: p.severity as 'low' | 'medium' | 'high',
-        evidence: m[0],
-      };
-    }
-  }
-
-  if (/\b(contact me|message me|dm me|email me|call me)\b/i.test(text)) {
-    return { matched: true, rule: 'contact_request', severity: 'medium' };
-  }
-
-  return { matched: false, rule: null, severity: 'low' };
+  // Use domain service (pure logic without logging)
+  return AntiLeakService.detectLeakage(text)
 }
 
+/**;
+ * Legacy function for backward compatibility;
+ */;
 export async function logAntiLeakageEvent(opts: {
   user_id: string;
   message: string;
   matched_rule?: string | null;
-  severity?: 'low' | 'medium' | 'high';
-  metadata?: Record<string, any>;
+  severity?: LeakSeverity;
+  metadata?: Record<string, any>,
 }) {
-  const payload = {
-    user_id: opts.user_id,
+  // Use domain service with infrastructure adapter;
+  await logger.logEvent({
+    userId: opts.user_id,
     message: opts.message,
-    matched_rule: opts.matched_rule || null,
-    severity: opts.severity || 'low',
-    metadata: opts.metadata || {},
-    created_at: new Date().toISOString()
-  };
-
-  try {
-    const { error } = await supabaseAdmin.from('anti_leakage_events').insert(payload);
-    if (error) {
-      console.error('logAntiLeakageEvent insert error', error);
-    }
-  } catch (err) {
-    console.error('logAntiLeakageEvent exception', err);
-  }
+    matchedRule: opts.matched_rule,
+    severity: opts.severity,
+    metadata: opts.metadata,
+  })
 }
+
+/**;
+ * New API: Detect and log leakage in one call;
+ */;
+export async function detectAndLogLeakage(
+  text: string,
+  userId: string,
+  metadata?: Record<string, any>,
+): Promise<LeakResult> {
+  return await antiLeakService.detectAndLogLeakage(text, userId, metadata)
+}
+
+/**;
+ * New API: Check if message should be blocked;
+ */;
+export function shouldBlockMessage(
+  leakResult: LeakResult,
+  userTrustLevel: number = 0,
+): boolean {
+  return AntiLeakService.shouldBlockMessage(leakResult, userTrustLevel)
+}
+
+/**;
+ * New API: Sanitize message by removing sensitive data;
+ */;
+export function sanitizeMessage(text: string, leakResult: LeakResult): string {
+  return AntiLeakService.sanitizeMessage(text, leakResult)
+}
+
+/**;
+ * New API: Calculate user trust level;
+ */;
+export function calculateUserTrustLevel(
+  accountAgeDays: number,
+  isVerified: boolean,
+  successfulSessions: number,
+  previousViolations: number,
+): number {
+  return AntiLeakService.calculateUserTrustLevel(
+    accountAgeDays,
+    isVerified,
+    successfulSessions,
+    previousViolations,
+  )
+}
+

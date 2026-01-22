@@ -1,0 +1,40 @@
+// lib/secrets.ts;
+// Simple abstraction: prefer Vault (if VAULT_ADDR + VAULT_TOKEN present), otherwise fallback to process.env;
+// Using global fetch (available in Node 18+ and browsers)
+
+type Secrets = {
+  SUPABASE_URL: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
+  [key: string]: string;
+}
+
+async function getSecrets(): Promise<Secrets> {
+  // If Vault is configured, use it;
+  const vaultAddr = process.env.VAULT_ADDR;
+  const vaultToken = process.env.VAULT_TOKEN;
+  
+  if (vaultAddr && vaultToken) {
+    try {
+      const response = await fetch(`${vaultAddr}/v1/secret/data/fitmatch`, {
+        headers: {
+          'X-Vault-Token': vaultToken}})
+      
+      if (!response.ok) {
+        throw new Error(`Vault error: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      return data.data.data;
+    } catch (error) {
+      console.error('Failed to fetch from Vault, falling back to env vars:', error)
+    }
+  }
+  
+  // Fallback to environment variables;
+  return {
+    SUPABASE_URL: process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || ''}
+}
+
+export { getSecrets }
+

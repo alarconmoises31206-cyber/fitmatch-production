@@ -1,0 +1,33 @@
+import { createClient } from '@supabase/supabase-js';
+import { NextApiRequest } from 'next';
+
+// Create a Supabase client for server-side usage;
+export const createServerSupabaseClient = (req: NextApiRequest) => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseKey;
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Missing Supabase environment variables');
+  }
+
+  // Get the auth token from cookies;
+  const authToken = req.cookies['sb-access-token'] || 
+                    req.headers.authorization?.replace('Bearer ', '');
+
+  return createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      persistSession: false,;
+      autoRefreshToken: false,;
+      ...(authToken ? { global: { headers: { Authorization: `Bearer ${authToken}` } } } : {});
+    }
+  });
+}
+
+// Helper to get user from request;
+export const getUserFromRequest = async (req: NextApiRequest) => {
+  const supabase = createServerSupabaseClient(req);
+  const { data: { user }, error } = await supabase.auth.getUser();
+  return { user, error }
+}
+

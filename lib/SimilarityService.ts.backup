@@ -1,0 +1,334 @@
+// lib/SimilarityService.ts
+// Phase 68 â€” Similarity Math & Deterministic Scoring Service
+
+import { CLIENT_QUESTIONS, TRAINER_QUESTIONS, WEIGHT_CLASSES, COMPARISON_MAP } from './phase66_5_questions';
+
+/**
+ * Interface for storing embeddings from database
+ */
+interface QuestionEmbedding {
+  user_id: string;
+  role: 'client' | 'trainer';
+  question_id: string;
+  embedding_vector: number[];
+}
+
+/**
+ * Interface for deterministic output (68.6)
+ */
+export interface DeterministicMatchScore {
+  eligible: boolean;
+  hardFailures: string[];
+  softScores: Record<string, number>;
+  weightedScore: number;
+  confidence: number;
+  explanationTokens: string[];
+}
+
+/**
+ * 68.1 â€” Cosine Similarity Computation
+ */
+export class SimilarityService {
+  
+  /**
+   * Compute cosine similarity between two vectors
+   * cosine_sim(A,B) = (AÂ·B) / (||A|| * ||B||)
+   */
+  static computeCosineSimilarity(vectorA: number[], vectorB: number[]): number {
+    // Fail-safe: if either vector is missing or empty
+    if (!vectorA || !vectorB || vectorA.length === 0 || vectorB.length === 0) {
+      return NaN;
+    }
+
+    // Ensure vectors have same length
+    if (vectorA.length !== vectorB.length) {
+      throw new Error(`Vector dimension mismatch: ${vectorA.length} vs ${vectorB.length}`);
+    }
+
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
+
+    for (let i = 0; i < vectorA.length; i++) {
+      dotProduct += vectorA[i] * vectorB[i];
+      normA += vectorA[i] * vectorA[i];
+      normB += vectorB[i] * vectorB[i];
+    }
+
+    normA = Math.sqrt(normA);
+    normB = Math.sqrt(normB);
+
+    if (normA === 0 || normB === 0) {
+      return 0;
+    }
+
+    return dotProduct / (normA * normB);
+
+  /**
+   * 68.2 — Soft Score Normalization
+   * Map raw cosine similarity (-1 to 1) to [0, 1]
+   */
+  static normalizeSimilarity(cosineSim: number): number {
+    if (isNaN(cosineSim)) {
+      return 0; // Treat missing embeddings as zero similarity
+    }
+    
+    const normalized = (cosineSim + 1) / 2;
+    
+    // Clamp between 0 and 1
+    if (normalized < 0) return 0;
+    if (normalized > 1) return 1;
+    
+    return normalized;
+
+  /**
+   * 68.3 — Hard Filter Enforcement
+   * Apply hard boundaries before any soft scoring
+   * Returns: { eligible: boolean, failures: string[] }
+   */
+  static checkHardFilters(
+    clientAnswers: Map<string, string>,
+    trainerAnswers: Map<string, string>,
+    clientEmbeddings: Map<string, number[]>,
+    trainerEmbeddings: Map<string, number[]>
+  ): { eligible: boolean; failures: string[] } {
+    const failures: string[] = [];
+
+    // Check client constraints vs trainer boundaries
+    const clientConstraints = clientAnswers.get('client_constraints');
+    const trainerBoundaries = trainerAnswers.get('trainer_boundaries');
+    
+    if (clientConstraints && trainerBoundaries) {
+      // Semantic check: if constraints mention something trainer avoids
+      // For now, simple text check - Phase 69 will enhance this
+      if (trainerBoundaries.toLowerCase().includes('constraint') || 
+          trainerBoundaries.toLowerCase().includes('avoid')) {
+        // This is a simplified check - actual implementation needs embedding comparison
+        failures.push('Client constraint may violate trainer boundaries');
+      }
+    }
+
+    // Check trainer "cannot work with" vs client past friction
+    const pastFriction = clientAnswers.get('client_past_friction');
+    if (pastFriction && trainerBoundaries) {
+      // Simplified check - Phase 69 will use embeddings
+      if (trainerBoundaries.toLowerCase().includes('friction') ||
+          trainerBoundaries.toLowerCase().includes('past issue')) {
+        failures.push('Client past friction matches trainer avoidance criteria');
+      }
+    }
+
+    // Check for missing embeddings on hard filter questions
+    const hardFilterQuestions = WEIGHT_CLASSES.HARD_FILTERS.questions;
+    hardFilterQuestions.forEach(questionId => {
+      if (questionId.includes('client')) {
+        if (!clientEmbeddings.has(questionId)) {
+          failures.push(`Missing embedding for hard filter question: ${questionId}`);
+        }
+      } else {
+        if (!trainerEmbeddings.has(questionId)) {
+          failures.push(`Missing embedding for hard filter question: ${questionId}`);
+        }
+      }
+    });
+
+    return {
+      eligible: failures.length === 0,
+      failures: failures
+    };
+  }
+  }
+  }
+
+  /**
+   * 68.4 — Weighted Soft Score Calculation
+   * Apply Phase 66.5/67.75 weights for soft signals
+   */
+
+  /**
+   * 68.5 — Confidence Calculation
+   * Quantify reliability of match based on answer quality
+   */
+  static calculateConfidence(
+    clientAnswers: Map<string, string>,
+    trainerAnswers: Map<string, string>,
+    clientEmbeddings: Map<string, number[]>,
+    trainerEmbeddings: Map<string, number[]>
+  ): number {
+    let confidenceScore = 1.0;
+    const penalties: number[] = [];
+
+    // Penalize empty or low semantic density answers
+    const allQuestions = [
+      ...Object.keys(CLIENT_QUESTIONS),
+      ...Object.keys(TRAINER_QUESTIONS)
+    ];
+
+    allQuestions.forEach(questionId => {
+      const answers = questionId.includes('client') ? clientAnswers : trainerAnswers;
+      const answer = answers.get(questionId);
+      
+      // Penalty for empty answers
+      if (!answer || answer.trim().length === 0) {
+        penalties.push(0.3); // 30% penalty for empty answer
+        return;
+      }
+
+      // Penalty for very short answers (low semantic density)
+      if (answer.trim().split(/\s+/).length < 3) {
+        penalties.push(0.2); // 20% penalty for very short answer
+        return;
+      }
+
+      // Penalty for missing embeddings
+      const embeddings = questionId.includes('client') ? clientEmbeddings : trainerEmbeddings;
+      if (!embeddings.has(questionId)) {
+        penalties.push(0.4); // 40% penalty for missing embedding
+      }
+    });
+
+    // Apply penalties
+    if (penalties.length > 0) {
+      const averagePenalty = penalties.reduce((sum, penalty) => sum + penalty, 0) / penalties.length;
+      confidenceScore -= averagePenalty;
+    }
+
+    // Ensure confidence is between 0 and 1
+    if (confidenceScore < 0) return 0;
+    if (confidenceScore > 1) return 1;
+    
+    return Math.round(confidenceScore * 100) / 100; // Round to 2 decimal places
+  }
+
+  static calculateWeightedScore(
+    similarityScores: Map<string, number>,
+    clientEmbeddings: Map<string, number[]>,
+    trainerEmbeddings: Map<string, number[]>
+  ): { softScores: Record<string, number>; weightedScore: number } {
+    const softScores: Record<string, number> = {};
+    let weightedSum = 0;
+    let weightTotal = 0;
+
+    // Define weights based on Phase 66.5
+    const WEIGHTS = {
+      // Primary signals: Goal?Approach, Style?Style (weight: 0.4 each)
+      'client_primary_goal': 0.4,
+      'trainer_approach': 0.4,
+      'client_interaction_style': 0.4,
+      'trainer_communication_style': 0.4,
+      
+      // Secondary signals: Readiness?Best-fit, Expectations?Philosophy (weight: 0.2 each)
+      'client_readiness': 0.2,
+      'trainer_best_fit_clients': 0.2,
+      'trainer_consultation_philosophy': 0.2
+    };
+
+    // Calculate weighted scores for each question
+    for (const [questionId, similarity] of similarityScores.entries()) {
+      const weight = WEIGHTS[questionId] || 0.1; // Default weight for unexpected questions
+      
+      // Check if embedding exists for confidence (handled separately in 68.5)
+      const hasEmbedding = 
+        clientEmbeddings.has(questionId) || 
+        trainerEmbeddings.has(questionId);
+      
+      // Apply similarity (0 if missing embedding)
+      const score = hasEmbedding ? this.normalizeSimilarity(similarity) : 0;
+      
+      softScores[questionId] = score;
+      weightedSum += score * weight;
+      weightTotal += weight;
+    }
+
+    // Calculate final weighted score (normalize by total weight)
+    const weightedScore = weightTotal > 0 ? weightedSum / weightTotal : 0;
+
+    // Cap at 1.0
+    return {
+      softScores,
+      weightedScore: Math.min(weightedScore, 1.0)
+    };
+  }
+
+  /**
+   * 68.6 — Main Deterministic Scoring Method
+   * Orchestrates the entire Phase 68 scoring pipeline
+   */
+  static calculateDeterministicScore(
+    clientId: string,
+    trainerId: string,
+    supabaseClient: any // Supabase client for database queries
+  ): DeterministicMatchScore {
+    // This is the main orchestration method
+    // In a real implementation, we would:
+    // 1. Fetch embeddings from database
+    // 2. Compute similarities
+    // 3. Apply hard filters
+    // 4. Calculate weighted scores
+    // 5. Calculate confidence
+    // 6. Generate explanation tokens
+    
+    // For now, return a stub implementation
+    const explanationTokens = [
+      'Hard filter check passed',
+      'Primary signal alignment: 85%',
+      'Style compatibility: 92%',
+      'Confidence: High (complete embeddings available)'
+    ];
+
+    return {
+      eligible: true,
+      hardFailures: [],
+      softScores: {
+        'client_primary_goal': 0.85,
+        'trainer_approach': 0.85,
+        'client_interaction_style': 0.92,
+        'trainer_communication_style': 0.92,
+        'client_readiness': 0.78,
+        'trainer_best_fit_clients': 0.78,
+        'trainer_consultation_philosophy': 0.65
+      },
+      weightedScore: 0.82,
+      confidence: 0.88,
+      explanationTokens: explanationTokens
+    };
+  }
+
+  /**
+   * Helper: Fetch embeddings from database
+   */
+  static async fetchQuestionEmbeddings(
+    userId: string,
+    role: 'client' | 'trainer',
+    supabaseClient: any
+  ): Promise<Map<string, number[]>> {
+    const embeddingsMap = new Map<string, number[]>();
+    
+    // This would query the question_embeddings table
+    // For now, return empty map
+    return embeddingsMap;
+  }
+
+  /**
+   * Helper: Compute all similarity scores
+   */
+  static computeAllSimilarities(
+    clientEmbeddings: Map<string, number[]>,
+    trainerEmbeddings: Map<string, number[]>
+  ): Map<string, number> {
+    const similarityScores = new Map<string, number>();
+    
+    // For each question pair in COMPARISON_MAP
+    for (const [clientQ, trainerQ] of Object.entries(COMPARISON_MAP)) {
+      const clientEmbedding = clientEmbeddings.get(clientQ);
+      const trainerEmbedding = trainerEmbeddings.get(trainerQ as string);
+      
+      if (clientEmbedding && trainerEmbedding) {
+        const similarity = this.computeCosineSimilarity(clientEmbedding, trainerEmbedding);
+        similarityScores.set(clientQ, similarity);
+      }
+    }
+    
+    return similarityScores;
+  }
+}

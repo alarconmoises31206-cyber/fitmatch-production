@@ -1,4 +1,232 @@
-﻿// Placeholder questionnaire page
-export default function Questionnaire() {
-  return <div>Questionnaire page - TODO: Implement</div>;
+﻿// pages/questionnaire.tsx - Client Profile Page with Local Storage
+import { useEffect, useState, useRef } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import BoundaryDisclosure from '../components/BoundaryDisclosure';
+
+interface ClientProfile {
+  user_id: string;
+  goals_raw?: string;
+  preferences_raw?: string;
+  fitness_level?: string;
+  updated_at: string;
 }
+
+export default function ClientProfilePage() {
+  const { user, loading: authLoading } = useAuth();
+  const [profile, setProfile] = useState<ClientProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Use refs to track input values without causing re-renders on every keystroke
+  const goalsRef = useRef<HTMLTextAreaElement>(null);
+  const preferencesRef = useRef<HTMLTextAreaElement>(null);
+  const fitnessLevelRef = useRef<HTMLSelectElement>(null);
+
+  useEffect(() => {
+    if (user) {
+      loadProfile();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
+  }, [user, authLoading]);
+
+  // Simple load from localStorage
+  async function loadProfile() {
+    if (!user || !user.id) {
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      const storageKey = 'client_profile_' + user.id;
+      const savedData = localStorage.getItem(storageKey);
+      
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        setProfile(parsedData);
+      } else {
+        // Create empty profile
+        setProfile({ 
+          user_id: user.id,
+          goals_raw: '',
+          preferences_raw: '',
+          fitness_level: '',
+          updated_at: new Date().toISOString()
+        });
+      }
+    } catch (err: any) {
+      console.error('Error loading profile:', err);
+      setError('Failed to load profile.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Get current form values from refs
+  function getFormData() {
+    return {
+      user_id: user?.id || '',
+      goals_raw: goalsRef.current?.value || '',
+      preferences_raw: preferencesRef.current?.value || '',
+      fitness_level: fitnessLevelRef.current?.value || '',
+      updated_at: new Date().toISOString()
+    };
+  }
+
+  // DEMONSTRATION: LocalStorage save (not production persistence)
+  async function saveProfile(e?: React.FormEvent) {
+    if (e) {
+      e.preventDefault();
+    }
+    
+    if (!user || !user.id) return;
+    
+    setSaving(true);
+    setError(null);
+    
+    try {
+      const storageKey = 'client_profile_' + user.id;
+      const formData = getFormData();
+      
+      // Update state with form data
+      setProfile(formData);
+      
+      localStorage.setItem(storageKey, JSON.stringify(formData));
+      setMessage('Profile saved successfully!');
+      setTimeout(() => setMessage(''), 3000);
+      
+    } catch (err: any) {
+      console.error('Error saving profile:', err);
+      setError('Error saving: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function fetchGoalSuggestion() {
+    if (!goalsRef.current) return;
+    
+    setAiLoading(true);
+    try {
+      const response = await fetch('/api/ai/assist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: 'help me set fitness goals', context: 'client_goals' }),
+      });
+      const data = await response.json();
+      if (data.suggestion) {
+        const current = goalsRef.current.value || '';
+        const newGoals = current ? current + ', ' + data.suggestion : data.suggestion;
+        goalsRef.current.value = newGoals;
+      }
+    } catch (err) {
+      console.error('Failed to fetch AI suggestion:', err);
+      setError('Failed to get AI suggestion');
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  if (authLoading || loading) {
+    return (
+      <div className="p-8">Loading...</div>
+      
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="p-8">Please sign in to view your profile.</div>
+      
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+        <h1 className="text-3xl font-bold mb-6">Your Client Profile</h1>
+        
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+        
+        {message && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            {message}
+          </div>
+        )}
+        
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+          <p className="font-medium">Welcome, {user.email}!</p>
+          <p className="text-sm text-gray-600">Using local storage (browser-only)</p>
+        </div>
+        
+        <form onSubmit={saveProfile}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium">Fitness Goals</label>
+                <button
+                  type="button"
+                  onClick={fetchGoalSuggestion}
+                  disabled={aiLoading}
+                  className="text-sm px-3 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 disabled:opacity-50"
+                >
+                  {aiLoading ? 'Thinking...' : '? Help me write'}
+                </button>
+              </div>
+              <textarea
+                ref={goalsRef}
+                className="w-full border rounded p-2"
+                rows={4}
+                defaultValue={profile?.goals_raw || ''}
+                placeholder="Weight loss, Muscle gain, Endurance..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Preferences</label>
+              <textarea
+                ref={preferencesRef}
+                className="w-full border rounded p-2"
+                rows={4}
+                defaultValue={profile?.preferences_raw || ''}
+                placeholder="Morning workouts, Online sessions, Diet tracking..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Fitness Level</label>
+              <select
+                ref={fitnessLevelRef}
+                className="w-full border rounded p-2"
+                defaultValue={profile?.fitness_level || ''}
+              >
+                <option value="">Select level</option>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-8">
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Save Profile'}
+            </button>
+            <p className="text-sm text-gray-500 mt-2">
+              Data is saved locally in your browser. Type freely - all spaces and formatting are preserved.
+            </p>
+          </div>
+        </form>
+      </div>
+    
+  );
+}
+
+

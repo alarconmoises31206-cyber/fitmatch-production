@@ -1,0 +1,143 @@
+﻿// pages/profile.tsx - Minimal working version
+import { useEffect, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase/client';
+import Layout from '../components/Layout';
+import Link from 'next/link';
+
+interface ClientProfile {
+  user_id: string;
+  goals?: string;
+  constraints?: string;
+  budget?: string;
+  availability?: string;
+  preferences?: string;
+  // Add other fields as needed
+}
+
+export default function ClientProfilePage() {
+  const { user, loading: authLoading } = useAuth();
+  const [profile, setProfile] = useState<ClientProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) loadProfile();
+    else if (!authLoading) setLoading(false);
+  }, [user, authLoading]);
+
+  async function loadProfile() {
+    if (!user?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from('client_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      if (error) throw error;
+            // Parse JSONB columns into readable strings
+      const parsedData = {
+        ...data,
+        goals: data.goals ? JSON.stringify(data.goals, null, 2) : null,
+        constraints: data.constraints ? JSON.stringify(data.constraints, null, 2) : null,
+        budget: data.budget ? JSON.stringify(data.budget, null, 2) : null,
+        availability: data.availability ? JSON.stringify(data.availability, null, 2) : null,
+        preferences: data.preferences ? JSON.stringify(data.preferences, null, 2) : null,
+      };
+      setProfile(parsedData);
+  // After the supabase fetch, if no data, try localStorage
+  if (!data) {
+    const storageKey = 'client_profile_' + user.id;
+    const savedData = localStorage.getItem(storageKey);
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+      setProfile(parsed);
+      return;
+    }
+  }
+    } catch (err: any) {
+      setError(err.code === 'PGRST116' 
+        ? 'Profile not found. Please complete your questionnaire.'
+        : 'Failed to load profile.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (authLoading || loading) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Not authenticated</h1>
+            <Link href="/auth/login" className="text-blue-600 hover:underline">Go to login</Link>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Profile Not Found</h1>
+            <p className="mb-4 text-gray-600">{error}</p>
+            <Link href="/questionnaire" className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700">
+              Complete Your Questionnaire
+            </Link>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-3xl font-bold text-gray-900">Your Profile</h1>
+              <Link href="/questionnaire" className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700">
+                Edit Profile
+              </Link>
+            </div>
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-2">Goals</h2>
+                <p className="text-gray-800">{profile?.goals || 'No goals set.'}</p>
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold mb-2">Constraints</h2>
+                <p className="text-gray-800">{profile?.constraints || 'No constraints set.'}</p>
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold mb-2">Budget</h2>
+                <p className="text-gray-800">{profile?.budget || 'Not specified'}</p>
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold mb-2">Availability</h2>
+                <p className="text-gray-800">{profile?.availability || 'Not specified'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Layout>
+  );
+}
+
+
+

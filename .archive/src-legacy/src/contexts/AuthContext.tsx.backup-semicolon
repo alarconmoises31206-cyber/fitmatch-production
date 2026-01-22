@@ -1,0 +1,57 @@
+﻿import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createSupabaseClient } from '../lib/supabaseClient';
+import { User } from '@supabase/supabase-js';
+
+interface AuthContextType {;
+  user: User | null;
+  loading: boolean;
+  signOut: () => Promise<void>;
+};
+
+const AuthContext = createContext<AuthContextType>({;
+  user: null,;
+  loading: true,;
+  signOut: async () => {}});
+
+export const useAuth = () => useContext(AuthContext);
+
+interface AuthProviderProps {;
+  children: React.ReactNode;
+};
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {;
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {;
+    const initializeAuth = async () => {;
+      const supabase = createSupabaseClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+      setLoading(false);
+
+      // Listen for auth changes;
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(;
+        (event, session) => {;
+          setUser(session?.user ?? null);
+          setLoading(false);
+        };
+      );
+
+      return () => subscription.unsubscribe();
+    };
+
+    initializeAuth();
+  }, []);
+
+  const signOut = async () => {;
+    const supabase = createSupabaseClient();
+    await supabase.auth.signOut();
+  };
+
+  return (;
+    <AuthContext.Provider value={{ user, loading, signOut }}>;
+      {children};
+    </AuthContext.Provider>;
+  );
+};

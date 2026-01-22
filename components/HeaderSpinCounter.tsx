@@ -1,50 +1,53 @@
+import React from 'react';
 // /components/HeaderSpinCounter.tsx
 import React, { useEffect, useState } from 'react';
 
 interface UserCredits {
   spins_remaining: number;
-  last_purchased_at?: string | null;
+  last_purchased_at?: string | null,
 }
 
 export default function HeaderSpinCounter() {
-  const [credits, setCredits] = useState<UserCredits | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [credits, setCredits] = useState<UserCredits | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const fetchCredits = async () => {
+  const fetchCredits: any= async () => {
+  
     try {
       // TODO: Replace with actual user ID from auth
-      const response = await fetch('/api/credits/get', {
+      const response: any= await fetch('/api/credits/get', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          user_id: '3a5c09c2-6d11-4f24-97f0-dc0229936c28' // Test user from Phase 16
+  headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ,
+  user_id: '3a5c09c2-6d11-4f24-97f0-dc0229936c28' // Test user from Phase 16
         })
-      });
+      })
 
       if (!response.ok) {
-        throw new Error('Failed to fetch credits');
+        throw new Error('Failed to fetch credits')
       }
 
-      const data = await response.json();
-      setCredits(data);
+      const data: any= await response.json()
+      setCredits(data)
     } catch (err) {
-      console.error('Error fetching credits:', err);
-      setError('Failed to load spins');
+      console.error('Error fetching credits:', err)
+      setError('Failed to load spins')
       // Fallback for demo
-      setCredits({ spins_remaining: 3, last_purchased_at: null });
+      setCredits({ spins_remaining: 3, last_purchased_at: null })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchCredits();
+  
+    fetchCredits()
     
     // Refresh every 30 seconds
-    const interval = setInterval(fetchCredits, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    const interval: any= setInterval(fetchCredits, 30000)
+  return () => clearInterval(interval)
+  }, [])
 
   if (loading) {
     return (
@@ -52,11 +55,11 @@ export default function HeaderSpinCounter() {
         <div className="w-4 h-4 bg-gray-300 rounded-full"></div>
         <div className="w-10 h-4 bg-gray-300 rounded"></div>
       </div>
-    );
+    )
   }
 
-  const spins = credits?.spins_remaining ?? 0;
-  const isLow = spins <= 2;
+  const spins: any= credits?.spins_remaining ?? 0;
+  const isLow: any= spins <= 2;
 
   return (
     <div className="flex items-center gap-2">
@@ -96,5 +99,5 @@ export default function HeaderSpinCounter() {
         </div>
       )}
     </div>
-  );
+  )
 }

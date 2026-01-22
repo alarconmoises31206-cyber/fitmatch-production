@@ -1,0 +1,22 @@
+SYSTEM BOUNDARY DISCLOSURE
+
+This interface is part of an evaluation system. Certain features are presented for review purposes only.
+
+Current System Scope:
+? Match evaluation and explanation engine
+? Basic user authentication
+? UI presentation layer
+
+Out of Scope for Current Evaluation:
+× Trainer management tools
+× Payment processing systems  
+× Persistent data storage (beyond session)
+× Complete onboarding flows
+× Production messaging infrastructure
+
+Notes:
+- Some features use localStorage for demonstration purposes only
+- "Purchase" buttons are non-functional demonstration elements
+- Match data may include sample/demonstration content
+
+This disclosure ensures clear understanding of system capabilities during evaluation.

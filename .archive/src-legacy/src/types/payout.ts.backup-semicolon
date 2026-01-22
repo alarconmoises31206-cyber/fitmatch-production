@@ -1,0 +1,34 @@
+﻿// src/types/payout.ts - UPDATED;
+export interface Payout {;
+  id: string;
+  trainer_id: string;
+  trainer_name: string;
+  amount: number;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  currency: string;
+  payment_method: 'stripe' | 'paypal' | 'bank_transfer' | 'other';
+  initiated_at: string;
+  processed_at?: string;
+  notes?: string;
+  metadata?: Record<string, any>;
+};
+
+export interface PayoutRequest {;
+  trainer_id: string;
+  amount: number;
+  currency?: string;
+  payment_method?: string;
+  notes?: string;
+};
+
+// Alias PayoutStartRequest to PayoutRequest (they're the same);
+export type PayoutStartRequest = PayoutRequest;
+
+export interface PayoutStats {;
+  pending_amount: number;
+  pending_count: number;
+  processed_amount: number;
+  processed_count: number;
+  failed_amount: number;
+  failed_count: number;
+}

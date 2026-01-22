@@ -1,0 +1,226 @@
+# PHASE 78 — TRUTH CANONICALIZATION MAP
+# Generated: 2026-01-18
+# Purpose: Single authoritative source of truth for all questionnaire fields.
+# Epistemic Integrity: Locked. No future AI hand-waving. No implied intelligence.
+
+client_questionnaire:
+  fields:
+    - id: primaryGoal
+      mode: client
+      question_text: \"What is your primary fitness goal?\"
+      response_type: single_select
+      used_now: yes
+      usage_type: filter
+      visible_to_other_party: yes
+      stored_for_future: yes
+      future_use_note: \"May later contribute to semantic similarity if a clear, explainable mapping between goal tags and trainer specializations is defined.\"
+      risk_note: \"Users may assume goals are interpreted beyond exact category matching and that higher relevance implies better suitability.\"
+      justification: \"Used to prevent obviously incompatible trainer-client pairings based on declared specialization tags.\"
+      origin_uncertain: no
+
+    - id: experienceLevel
+      mode: client
+      question_text: \"What is your current fitness level?\"
+      response_type: single_select
+      used_now: no
+      usage_type: none
+      visible_to_other_party: conditional
+      stored_for_future: yes
+      future_use_note: \"Could be used to filter or warn against trainer intensity levels, but only after establishing a clear, rule-based mapping between level labels and trainer-provided metadata.\"
+      risk_note: \"Users may assume their fitness level directly influences trainer selection or trainer preparedness.\"
+      justification: \"Collected for trainer context and potential future compatibility features, but currently not part of matching logic.\"
+      origin_uncertain: no
+
+    - id: trainingStyle
+      mode: client
+      question_text: \"What style of training are you most interested in?\"
+      response_type: single_select
+      used_now: no
+      usage_type: none
+      visible_to_other_party: conditional
+      stored_for_future: yes
+      future_use_note: \"Could enable matching on trainer-advertised 'training style' tags if a clear, closed taxonomy is defined and mapped.\"
+      risk_note: \"Users may assume matching accounts for nuanced style preferences or trainer expertise in specific modalities, leading to unmet expectations.\"
+      justification: \"Gathered to inform future feature development around style compatibility; currently not used in matching.\"
+      origin_uncertain: no
+
+    - id: weeklyAvailability
+      mode: client
+      question_text: \"How many days per week can you commit to training?\"
+      response_type: numeric
+      response_constraint: \"Integer, bounded (e.g., 0–7 days per week); no free-form numeric input.\"
+      used_now: no
+      usage_type: none
+      visible_to_other_party: conditional
+      stored_for_future: yes
+      future_use_note: \"Could be used to filter trainers based on their typical session frequency or availability, but only if a clear, rule-based requirement is defined.\"
+      risk_note: \"Users may assume the system considers their availability in scheduling or trainer matching, potentially expecting automated calendar coordination.\"
+      justification: \"Collected to understand client commitment level and for potential future scheduling features; currently not used in matching.\"
+      origin_uncertain: no
+
+    - id: sessionLengthPreference
+      mode: client
+      question_text: \"What is your ideal session length?\"
+      response_type: single_select
+      used_now: no
+      usage_type: none
+      visible_to_other_party: conditional
+      stored_for_future: yes
+      future_use_note: \"Could inform trainer pricing or availability filtering if session length is a defined, filterable attribute in trainer profiles.\"
+      risk_note: \"Users may assume the system matches them with trainers who offer sessions of that exact length or can accommodate it within scheduling.\"
+      justification: \"Collected to understand client expectations and for potential future pricing or scheduling features; currently not used in matching.\"
+      origin_uncertain: no
+
+    - id: preferredGender
+      mode: client
+      question_text: \"Do you have a gender preference for your trainer?\"
+      response_type: single_select
+      used_now: yes
+      usage_type: filter
+      visible_to_other_party: no
+      stored_for_future: yes
+      future_use_note: \"Stored for compliance, reporting, and potential future anonymized bias analysis; no planned use in matching beyond the existing explicit filter.\"
+      risk_note: \"Users may assume the system applies nuanced or culturally-sensitive handling of gender preferences beyond a simple binary filter, or that preferences are not shared.\"
+      justification: \"Explicitly requested by users for comfort/safety; implemented as a strict binary filter on trainer profile gender field.\"
+      origin_uncertain: no
+
+    - id: ageRange
+      mode: client
+      question_text: \"What is your age?\"
+      response_type: numeric
+      used_now: no
+      usage_type: none
+      visible_to_other_party: conditional
+      stored_for_future: yes
+      future_use_note: \"Could be used for demographic analytics or anonymized trend reporting; not planned for matching or filtering without explicit user consent and clear rules.\"
+      risk_note: \"Users may assume age influences matching (e.g., similar age cohorts) or that trainers receive their exact age for compatibility assessment.\"
+      justification: \"Collected for basic profile information and potential demographic insights; currently not used in matching logic.\"
+      origin_uncertain: no
+
+    - id: medicalConditions
+      mode: client
+      question_text: \"Do you have any injuries or medical conditions I should be aware of?\"
+      response_type: free_text
+      used_now: no
+      usage_type: none
+      visible_to_other_party: conditional
+      stored_for_future: yes
+      future_use_note: \"May be surfaced to matched trainers for safety awareness with explicit client consent and clear disclosure controls; no automated matching or filtering.\"
+      risk_note: \"Users may assume the system uses this information to filter or match with trainers who have specific medical expertise or certifications.\"
+      justification: \"Collected for safety and liability awareness, to be shared only after a match is established and with client approval.\"
+      origin_uncertain: no
+
+    - id: personalMotivation
+      mode: client
+      question_text: \"What motivates you to stick with a fitness plan?\"
+      response_type: free_text
+      used_now: no
+      usage_type: none
+      visible_to_other_party: conditional
+      stored_for_future: yes
+      future_use_note: \"Could be surfaced to trainers to aid communication and rapport building after a match is established; not used for matching, ranking, or filtering.\"
+      risk_note: \"Users may assume the system matches them with trainers who specialize in or are skilled at addressing their specific motivational profile.\"
+      justification: \"Gathered to help trainers understand client mindset and tailor communication; currently not used in matching logic.\"
+      origin_uncertain: no
+
+    - id: communicationStyle
+      mode: client
+      question_text: \"How do you prefer your trainer to communicate with you?\"
+      response_type: single_select
+      used_now: no
+      usage_type: none
+      visible_to_other_party: conditional
+      stored_for_future: yes
+      future_use_note: \"May be surfaced to trainers for communication style awareness after a match; not used for matching or ranking.\"
+      risk_note: \"Users may assume the system matches them with trainers whose natural communication style aligns with their preference.\"
+      justification: \"Collected to provide trainers with client communication preferences to improve interaction quality; currently not used in matching.\"
+      origin_uncertain: no
+
+trainer_questionnaire:
+  fields:
+    - id: specialization
+      mode: trainer
+      question_text: \"What is your primary specialization?\"
+      response_type: single_select
+      used_now: yes
+      usage_type: filter
+      visible_to_other_party: yes
+      stored_for_future: yes
+      future_use_note: \"Used to allow clients to filter for trainer specialties explicitly; may later contribute to embeddings-based similarity if taxonomy is clearly defined.\"
+      risk_note: \"Users may assume this implies nuanced matching or expertise verification; currently only a basic tag filter.\"
+      justification: \"Collected to allow clients to select trainers based on declared specialization; used as an explicit, visible filter in the MVP.\"
+      origin_uncertain: no
+
+    - id: certifications
+      mode: trainer
+      question_text: \"What certifications do you hold?\"
+      response_type: multi_select
+      used_now: yes
+      usage_type: display
+      visible_to_other_party: yes
+      stored_for_future: yes
+      future_use_note: \"Displayed on trainer profiles for client awareness; may later feed into embeddings for similarity ranking if verified.\"
+      risk_note: \"Users may assume the system validates certifications or prioritizes certified trainers in matching; currently no verification or weighting occurs.\"
+      justification: \"Collected for transparency and client context; currently displayed but not used in matching or ranking.\"
+      origin_uncertain: no
+
+    - id: years_experience
+      mode: trainer
+      question_text: \"Years of Experience\"
+      response_type: numeric
+      used_now: yes
+      usage_type: display
+      visible_to_other_party: yes
+      stored_for_future: yes
+      future_use_note: \"Displayed to clients for context; may be considered in future compatibility scoring once rules are defined.\"
+      risk_note: \"Users may assume this automatically correlates with trainer quality or fit; currently, it is purely informational.\"
+      justification: \"Collected for client awareness; not used for filtering or ranking.\"
+      origin_uncertain: no
+
+    - id: bio
+      mode: trainer
+      question_text: \"Bio\"
+      response_type: free_text
+      used_now: yes
+      usage_type: display
+      visible_to_other_party: yes
+      stored_for_future: yes
+      future_use_note: \"Displayed to clients to aid decision-making; may later feed into semantic matching if privacy and accuracy constraints are defined.\"
+      risk_note: \"Users may assume the system analyzes bio for compatibility or match quality; currently, it is purely visible text.\"
+      justification: \"Collected for context and trainer self-expression; not used in algorithmic matching.\"
+      origin_uncertain: no
+
+    - id: pricing_tier
+      mode: trainer
+      question_text: \"Pricing Tier\"
+      response_type: single_select
+      used_now: yes
+      usage_type: filter
+      visible_to_other_party: yes
+      stored_for_future: yes
+      future_use_note: \"Allows clients to filter trainers by tier; may later feed into algorithmic matching once tiers are clearly defined.\"
+      risk_note: \"Users may assume the system prioritizes or ranks trainers by tier; currently, it is purely a client-controlled filter.\"
+      justification: \"Collected to give clients control over pricing selection; not used for automatic ranking.\"
+      origin_uncertain: no
+
+    - id: hourly_rate
+      mode: trainer
+      question_text: \"Hourly Rate\"
+      response_type: numeric
+      used_now: yes
+      usage_type: display
+      visible_to_other_party: yes
+      stored_for_future: yes
+      future_use_note: \"Displayed to clients for budget awareness; may later feed into price-based sorting if explicitly requested by clients.\"
+      risk_note: \"Users may assume the system automatically filters or ranks trainers by hourly rate; currently, it is purely informational.\"
+      justification: \"Collected for client awareness of costs; not used for filtering or ranking unless explicitly controlled.\"
+      origin_uncertain: no
+
+# EPISTEMIC INTEGRITY CHECK
+# ? No field uses \"future AI\" as justification
+# ? Every field has explicit used_now and usage_type
+# ? Risk notes capture user inference hazards
+# ? Future use is conditional and explainable
+# ? Origin uncertain only where reconstruction was necessary
+
+# PHASE 78 — COMPLETE

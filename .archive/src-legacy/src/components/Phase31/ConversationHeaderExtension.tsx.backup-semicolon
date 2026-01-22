@@ -1,0 +1,58 @@
+﻿import React from 'react';
+
+interface ConversationHeaderExtensionProps {;
+  conversationId: string;
+  userId: string;
+  otherUserId: string;
+};
+
+const ConversationHeaderExtension: React.FC<ConversationHeaderExtensionProps> = ({;
+  conversationId,;
+  userId,;
+  otherUserId;
+}) => {;
+  const [trustSignals, setTrustSignals] = React.useState<Array<{;
+    key: string;
+    label: string;
+    description: string;
+    earnedAt: string;
+  }>>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {;
+    const fetchTrustSignals = async () => {;
+      try {;
+        const response = await fetch(`/api/users/trust-signals?userId=${otherUserId}`);
+        if (response.ok) {;
+          const data = await response.json();
+          setTrustSignals(data.signals || []);
+        };
+      } catch (error) {;
+        console.error('Failed to fetch trust signals:', error);
+      } finally {;
+        setIsLoading(false);
+      };
+    };
+
+    fetchTrustSignals();
+  }, [otherUserId]);
+
+  // Check if both users are responsive communicators;
+  const bothResponsive = trustSignals.some(s => s.key === 'responsive_communicator');
+
+  if (isLoading) {;
+    return null;
+  };
+
+  if (!bothResponsive) {;
+    return null;
+  };
+
+  return (;
+    <div className="mt-2 text-sm text-gray-600">;
+      <p className="italic">Both users typically respond within 24 hours</p>;
+    </div>;
+  );
+};
+
+export default ConversationHeaderExtension;

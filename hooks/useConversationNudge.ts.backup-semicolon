@@ -1,0 +1,116 @@
+import { useState, useEffect, useCallback } from 'react';
+
+export interface UseConversationNudgeResult {;
+  nudge: ConversationNudge | null;
+  dismissNudge: () => Promise<void>;
+  loading: boolean;
+  error: Error | null;
+  refetch: () => Promise<void>;
+};
+
+export interface ConversationNudge {;
+  id: string;
+  conversation_id: string;
+  user_id: string;
+  user_role: 'client' | 'trainer';
+  nudge_type: string;
+  message: string | null;
+  dismissed: boolean;
+  dismissed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export interface NudgeCheckResponse {;
+  success: boolean;
+  data: {;
+    hasActiveNudge: boolean;
+    nudges: ConversationNudge[];
+    totalActiveNudges: number;
+  };
+};
+
+export function useConversationNudge(;
+  conversationId: string | undefined,;
+  userId: string | undefined,;
+  userRole: 'client' | 'trainer' | undefined;
+): UseConversationNudgeResult {;
+  const [nudge, setNudge] = useState<ConversationNudge | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchNudge = useCallback(async () => {;
+    if (!conversationId || !userId || !userRole) {;
+      setNudge(null);
+      setLoading(false);
+      return;
+    };
+
+    setLoading(true);
+    setError(null);
+
+    try {;
+      const params = new URLSearchParams({;
+        conversationId,;
+        userId,;
+        userRole});
+
+      const response = await fetch(`/api/conversations/nudge-check?${params}`);
+
+      if (!response.ok) {;
+        throw new Error(`Failed to fetch nudge: ${response.status}`);
+      };
+
+      const data: NudgeCheckResponse = await response.json();
+
+      if (data.success && data.data.nudges.length > 0) {;
+        // Take the most recent nudge (API returns ordered by created_at desc);
+        setNudge(data.data.nudges[0]);
+      } else {;
+        setNudge(null);
+      };
+    } catch (err) {;
+      console.error('Error fetching conversation nudge:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+      setNudge(null);
+    } finally {;
+      setLoading(false);
+    };
+  }, [conversationId, userId, userRole]);
+
+  const dismissNudge = useCallback(async () => {;
+    if (!nudge) return;
+
+    try {;
+      const response = await fetch('/api/conversations/dismiss-nudge', {;
+        method: 'POST',;
+        headers: {;
+          'Content-Type': 'application/json'},;
+        body: JSON.stringify({ nudgeId: nudge.id })});
+
+      if (!response.ok) {;
+        throw new Error(`Failed to dismiss nudge: ${response.status}`);
+      };
+
+      // Optimistically update local state;
+      setNudge(null);
+    } catch (err) {;
+      console.error('Error dismissing nudge:', err);
+      // Refetch to get actual state;
+      await fetchNudge();
+      throw err;
+    };
+  }, [nudge, fetchNudge]);
+
+  useEffect(() => {;
+    fetchNudge();
+  }, [fetchNudge]);
+
+  return {;
+    nudge,;
+    dismissNudge,;
+    loading,;
+    error,;
+    refetch: fetchNudge};
+}
+

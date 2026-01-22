@@ -1,0 +1,202 @@
+﻿import React, { useState, useEffect } from 'react';
+
+interface Conversation {;
+  id: string;
+  client_id: string;
+  trainer_id: string;
+  closed_by_user?: boolean | null;
+};
+
+interface ReengagementNudgeProps {;
+  conversation: Conversation;
+  onDismiss?: () => void;
+  onSendMessage?: (message: string) => Promise<void>;
+  onCloseConversation?: () => void;
+};
+
+export const ReengagementNudge: React.FC<ReengagementNudgeProps> = ({;
+  conversation,;
+  onDismiss,;
+  onSendMessage,;
+  onCloseConversation;
+}) => {;
+  const [isVisible, setIsVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [nudgeData, setNudgeData] = useState<{;
+    shouldNudge: boolean;
+    nudgeType: string;
+    suggestedCopy: string;
+    conversationId: string;
+  } | null>(null);
+
+  // Check for nudge on mount and when conversation changes;
+  useEffect(() => {;
+    checkNudgeStatus();
+  }, [conversation.id]);
+
+  const checkNudgeStatus = async () => {;
+    try {;
+      const response = await fetch(`/api/conversations/nudge-check?conversationId=${conversation.id}`);
+      const data = await response.json();
+      
+      if (data.shouldNudge) {;
+        setNudgeData(data);
+        setIsVisible(true);
+      } else {;
+        setIsVisible(false);
+      };
+    } catch (error) {;
+      console.error('Failed to check nudge status:', error);
+      setIsVisible(false);
+    };
+  };
+
+  const handleDismiss = async () => {;
+    if (nudgeData) {;
+      try {;
+        setIsLoading(true);
+        // Note: We need to get the actual nudge ID from somewhere;
+        // For now, we'll just hide it;
+      } catch (error) {;
+        console.error('Failed to dismiss nudge:', error);
+      } finally {;
+        setIsLoading(false);
+      };
+    };
+    
+    setIsVisible(false);
+    if (onDismiss) onDismiss();
+  };
+
+  const handleSendQuickReply = async () => {;
+    if (!nudgeData || !onSendMessage) return;
+    
+    setIsLoading(true);
+    try {;
+      await onSendMessage(nudgeData.suggestedCopy);
+      await handleDismiss();
+    } catch (error) {;
+      console.error('Failed to send message:', error);
+    } finally {;
+      setIsLoading(false);
+    };
+  };
+
+  const handleCloseConversation = async () => {;
+    setIsLoading(true);
+    try {;
+      const response = await fetch('/api/conversations/close', {;
+        method: 'POST',;
+        headers: { 'Content-Type': 'application/json' },;
+        body: JSON.stringify({;
+          conversationId: conversation.id,;
+          reason: 'user_initiated';
+        });
+      });
+      
+      if (response.ok) {;
+        if (onCloseConversation) onCloseConversation();
+        setIsVisible(false);
+      };
+    } catch (error) {;
+      console.error('Failed to close conversation:', error);
+    } finally {;
+      setIsLoading(false);
+    };
+  };
+
+  const handleOpenMessageComposer = () => {;
+    // Focus on message input if it exists;
+    const input = document.querySelector('textarea, input[type="text"]');
+    if (input instanceof HTMLElement) {;
+      input.focus();
+    };
+    handleDismiss();
+  };
+
+  if (!isVisible || !nudgeData) {;
+    return null;
+  };
+
+  return (;
+    <div className="reengagement-nudge bg-blue-50 border border-blue-200 rounded-lg p-4 my-3 animate-fade-in">;
+      <div className="flex justify-between items-start">;
+        <div className="flex-1">;
+          <p className="text-sm text-gray-700 mb-3">;
+            {nudgeData.suggestedCopy};
+          </p>;
+          
+          <div className="flex flex-wrap gap-2">;
+            {nudgeData.nudgeType !== 'close' && (;
+              <>;
+                <button;
+                  onClick={handleSendQuickReply};
+                  disabled={isLoading};
+                  className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors";
+                >;
+                  Send follow-up;
+                </button>;
+                <button;
+                  onClick={handleOpenMessageComposer};
+                  disabled={isLoading};
+                  className="px-3 py-1.5 text-sm bg-white text-blue-600 border border-blue-300 rounded hover:bg-blue-50 disabled:opacity-50 transition-colors";
+                >;
+                  Write my own;
+                </button>;
+              </>;
+            )};
+            
+            {nudgeData.nudgeType === 'close' && (;
+              <button;
+                onClick={handleCloseConversation};
+                disabled={isLoading};
+                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 border border-gray-300 rounded hover:bg-gray-200 disabled:opacity-50 transition-colors";
+              >;
+                Close Conversation;
+              </button>;
+            )};
+            
+            <button;
+              onClick={handleDismiss};
+              disabled={isLoading};
+              className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 transition-colors";
+            >;
+              Dismiss;
+            </button>;
+          </div>;
+        </div>;
+        
+        <button;
+          onClick={handleDismiss};
+          className="text-gray-400 hover:text-gray-600 ml-2 transition-colors";
+          disabled={isLoading};
+        >;
+          ×;
+        </button>;
+      </div>;
+      
+      <div className="mt-2 text-xs text-gray-500">;
+        This suggestion will not appear again for 72 hours.;
+      </div>;
+    </div>;
+  );
+};
+
+// Add some CSS for animation;
+const styles = `;
+@keyframes fade-in {;
+  from { opacity: 0; transform: translateY(-10px); };
+  to { opacity: 1; transform: translateY(0); };
+};
+
+.animate-fade-in {;
+  animation: fade-in 0.3s ease-out;
+};
+`;
+
+// Inject styles;
+if (typeof document !== 'undefined') {;
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = styles;
+  document.head.appendChild(styleSheet);
+}

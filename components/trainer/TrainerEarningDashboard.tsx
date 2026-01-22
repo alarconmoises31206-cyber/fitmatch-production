@@ -1,100 +1,105 @@
+import React from 'react';
 // /components/trainer/TrainerEarningsDashboard.tsx
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, DollarSign, CreditCard, Download } from 'lucide-react';
 
 interface EarningsData {
-  pending_cents: number;
+  pending_cents: number;,
   paid_out_cents: number;
-  total_earnings_cents: number;
+  total_earnings_cents: number;,
   recent_payouts: Array<{
-    id: string;
-    amount_cents: number;
-    created_at: string;
-    status: string;
+    id: string;,
+  amount_cents: number;
+    created_at: string;,
+  status: string,
   }>;
-  monthly_earnings: Array<{
-    month: string;
-    earnings_cents: number;
+  monthly_earnings: Array<{,
+  month: string;
+    earnings_cents: number,
   }>;
 }
 
 interface TrainerEarningsDashboardProps {
-  trainerId: string;
+  trainerId: string,
 }
 
 const TrainerEarningsDashboard: React.FC<TrainerEarningsDashboardProps> = ({ trainerId }) => {
-  const [earnings, setEarnings] = useState<EarningsData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
+  
+  const [earnings, setEarnings] = useState<EarningsData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month')
 
   useEffect(() => {
-    fetchEarnings();
-  }, [trainerId, timeRange]);
+  fetchEarnings()
+  }, [trainerId, timeRange])
 
-  const fetchEarnings = async () => {
+  const fetchEarnings: any= async () => {
+  
     try {
-      const response = await fetch(`/api/trainer/earnings?trainer_id=${trainerId}&range=${timeRange}`, {
+  const response: any= await fetch(`/api/trainer/earnings?trainer_id=${trainerId}&range=${timeRange}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('supabaseAuthToken')}`
         }
-      });
+      })
 
-      const data = await response.json();
+      const data: any= await response.json()
       
       if (data.success) {
-        setEarnings(data.earnings);
+        setEarnings(data.earnings)
       }
     } catch (error) {
-      console.error('Failed to fetch earnings:', error);
+      console.error('Failed to fetch earnings:', error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
-  const formatCentsToDollars = (cents: number) => {
-    return `$${(cents / 100).toFixed(2)}`;
-  };
+  const formatCentsToDollars: any= (cents: number) => {
+  
+  return `$${(cents / 100).toFixed(2)}`;
+  }
 
-  const handleRequestPayout = async () => {
+  const handleRequestPayout: any= async () => {
+  
     if (!earnings || earnings.pending_cents < 1000) { // $10 minimum
-      alert(`Minimum payout is $10. You have ${formatCentsToDollars(earnings?.pending_cents || 0)} pending.`);
+  alert(`Minimum payout is $10. You have ${formatCentsToDollars(earnings?.pending_cents || 0)} pending.`)
       return;
     }
 
     if (!confirm(`Request payout of ${formatCentsToDollars(earnings.pending_cents)}?`)) {
-      return;
+      return,
     }
 
     try {
-      const response = await fetch('/api/trainer/request-payout', {
+      const response: any= await fetch('/api/trainer/request-payout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('supabaseAuthToken')}`
         },
         body: JSON.stringify({ trainer_id: trainerId })
-      });
+      })
 
-      const data = await response.json();
+      const data: any= await response.json()
 
       if (data.success) {
-        alert('Payout requested successfully! It will be processed within 3-5 business days.');
-        fetchEarnings(); // Refresh data
+        alert('Payout requested successfully! It will be processed within 3-5 business days.')
+        fetchEarnings() // Refresh data
       } else {
-        alert(`Error: ${data.error}`);
+        alert(`Error: ${data.error}`)
       }
     } catch (error: any) {
-      console.error('Failed to request payout:', error);
-      alert('Failed to request payout');
+      console.error('Failed to request payout:', error)
+      alert('Failed to request payout')
     }
-  };
+  }
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
-    );
+    )
   }
 
   if (!earnings) {
@@ -103,7 +108,7 @@ const TrainerEarningsDashboard: React.FC<TrainerEarningsDashboardProps> = ({ tra
         <div className="text-gray-400 mb-2">No earnings data found</div>
         <p className="text-gray-500">Earnings will appear here when clients unlock your answers.</p>
       </div>
-    );
+    )
   }
 
   return (
@@ -182,9 +187,10 @@ const TrainerEarningsDashboard: React.FC<TrainerEarningsDashboardProps> = ({ tra
           </p>
           <button
             onClick={() => {
+  
               // Export earnings CSV
-              const event = new CustomEvent('exportEarnings');
-              window.dispatchEvent(event);
+              const event: any= new CustomEvent('exportEarnings')
+  window.dispatchEvent(event)
             }}
             className="w-full mt-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center justify-center"
           >
@@ -277,7 +283,7 @@ const TrainerEarningsDashboard: React.FC<TrainerEarningsDashboardProps> = ({ tra
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
 export default TrainerEarningsDashboard;

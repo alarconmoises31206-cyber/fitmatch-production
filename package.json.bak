@@ -1,0 +1,41 @@
+﻿{
+    "name":  "fitmatch-production",
+    "version":  "1.0.0",
+    "private":  true,
+    "scripts":  {
+                    "dev":  "next dev",
+                    "build":  "next build",
+                    "start":  "next start",
+                    "lint":  "next lint",
+                    "test":  "jest",
+                    "test:ai-engine":  "tsx scripts/test-ai-engine/test-engine.ts",
+                    "verify:phase60":  "tsx scripts/verify-phase60/verify.ts",
+                    "db:migrate:phase60":  "echo \u0027Run this SQL in Supabase: supabase/migrations/20250101000000_phase60_ai_matchmaking_tables.sql\u0027",
+                    "verify:phase62":  "tsx scripts/verify-phase62/verify.ts",
+                    "test:phase66-step1":  "tsx scripts/test-ai-interpretation/test.ts",
+                    "verify:phase66":  "tsx scripts/verify-phase66/verify.ts",
+                    "test:phase66-step2":  "tsx scripts/test-match-explanation/test.ts",
+                    "test:phase66":  "tsx scripts/test-phase66-comprehensive/test.ts"
+                },
+    "dependencies":  {
+                         "@supabase/auth-helpers-nextjs":  "^0.8.0",
+                         "@supabase/auth-helpers-react":  "^0.15.0",
+                         "@supabase/ssr":  "^0.8.0",
+                         "@supabase/supabase-js":  "^2.39.0",
+                         "ioredis":  "^5.9.0",
+                         "next":  "13.x",
+                         "react":  "^18.2.0",
+                         "react-dom":  "^18.2.0",
+                         "stripe":  "^20.1.2",
+                         "zod":  "^4.3.5"
+                     },
+    "devDependencies":  {
+                            "@types/jest":  "^29.5.0",
+                            "@types/node":  "^20.0.0",
+                            "@types/react":  "^18.2.0",
+                            "axios":  "^1.13.2",
+                            "jest":  "^29.5.0",
+                            "tsx":  "^3.12.0",
+                            "typescript":  "^5.0.0"
+                        }
+}

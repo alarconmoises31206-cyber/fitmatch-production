@@ -1,0 +1,320 @@
+﻿﻿import { GetServerSideProps } from 'next';
+import { useRouter } from 'next/router';
+import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient } from '../../../infra/adapters/supabase-client.adapter';
+import React from 'react';
+
+interface RemediationAttempt {
+  incidentId: string;
+  ruleKey: string;
+  attempt: number;
+  success: boolean;
+  message: string;
+  timestamp: string;
+  metadata?: Record<string, any>}
+
+interface Incident {
+  id: string;
+  timestamp: string;
+  status: 'CRITICAL' | 'DEGRADED' | 'RESOLVED';|status: 'CRITICAL' | 'DEGRADED' | 'RESOLVED';|status: 'CRITICAL' | 'DEGRADED' | 'RESOLVED';
+  service: string | null;
+  message: string;
+  acknowledged: boolean;
+  acknowledged_by: string | null;,
+  acknowledged_at: string | null;
+  metadata?: {
+    remediation_attempts?: RemediationAttempt[]}
+}
+
+interface IncidentsPageProps {
+  incidents: Incident[];
+  adminEmail: string | null}
+
+function formatTimestamp(isoString: string): string {
+  const date: any= new Date(isoString)
+  return date.toLocaleString();
+}
+
+function RemediationBadge({ attempts }: { attempts?: RemediationAttempt[] }) {
+  if (!attempts || attempts.length === 0) {
+    return null;
+  }
+
+  const lastAttempt: any= attempts[attempts.length - 1];
+  const totalAttempts: any= attempts.length;
+  
+  return (
+    <div className="ml-2 inline-flex items-center">
+      <span className={`px-2 py-1 text-xs rounded-full ${lastAttempt.success ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+        {lastAttempt.success ? '🟢 Auto-fixed' : '🟡 Auto-fix attempted'}
+      </span>
+      <span className="ml-1 text-xs text-gray-500">({totalAttempts})</span>
+    </div>
+  )
+}
+
+export default function IncidentsPage({ incidents, adminEmail }: IncidentsPageProps) {
+  const router: any= useRouter()
+
+  const handleAcknowledge: any= async (id: string) => {
+  
+    console.log("Acknowledge clicked, id:", id)
+    if (!confirm('Acknowledge this incident?')) return;
+    try {
+  const res: any= await fetch(`/api/incidents/acknowledge/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      })
+      if (res.ok) {
+        router.replace(router.asPath) // Refresh server-side props
+      } else {
+        const error: any= await res.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Failed to acknowledge incident')
+    }
+  }
+
+  const handleResolve: any= async (id: string) => {
+  
+    if (!confirm('Mark this incident as RESOLVED?')) return;
+    try {
+  console.log("Fetch URL:", `/api/incidents/resolve/${id}`)
+      const res: any= await fetch(`/api/incidents/resolve/${id}`, { method: 'POST' })
+      if (res.ok) {
+        router.replace(router.asPath)
+      } else {
+        const error: any= await res.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Failed to resolve incident')
+    }
+  }
+
+  const showRemediationDetails: any= (attempts: RemediationAttempt[]) => {
+  
+    const details: any= attempts.map((attempt, index) => `
+  Attempt #${index + 1}:
+- Rule: ${attempt.ruleKey}
+- Status: ${attempt.success ? 'SUCCESS' : 'FAILED'}
+- Time: ${formatTimestamp(attempt.timestamp)}
+- Message: ${attempt.message}
+${attempt.metadata ? '- Metadata: ' + JSON.stringify(attempt.metadata, null, 2) : ''}
+`).join('\n---\n')
+    
+    alert(`Auto-Remediation Details:\n\n${details}`)
+  }
+
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6">Incident History</h1>
+      
+      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {incidents.map((incident) => (
+              <tr key={incident.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {formatTimestamp(incident.timestamp)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {incident.service || 'N/A'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    incident.status === 'CRITICAL' ? 'bg-red-100 text-red-800' :
+                    incident.status ===status: 'CRITICAL' | 'DEGRADED' | 'RESOLVED';? 'bg-yellow-100 text-yellow-800' :
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    {incident.status}
+                    <RemediationBadge attempts={incident.metadata?.remediation_attempts} />
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-900">
+                  <div className="flex items-center">
+                    <span>{incident.message}</span>
+                    {incident.metadata?.remediation_attempts && incident.metadata.remediation_attempts.length > 0 && (
+                      <button
+                        onClick={() => showRemediationDetails(incident.metadata!.remediation_attempts!)}
+                        className="ml-2 text-xs text-blue-600 hover:text-blue-800"
+                        title="View remediation details"
+                      >
+                        ⚙️
+                      </button>
+                    )}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  {!incident.acknowledged && (
+                    <button
+                      onClick={() => handleAcknowledge(incident.id)}
+                      className="text-indigo-600 hover:text-indigo-900 mr-4"
+                    >
+                      Acknowledge
+                    </button>
+                  )}
+                  {incident.status !== 'RESOLVED' && (
+                    <button
+                      onClick={() => handleResolve(incident.id)}
+                      className="text-green-600 hover:text-green-900"
+                    >
+                      Resolve
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  
+  // ... existing auth and data fetching code ...
+  // Note: This part is truncated as it was in the original file
+  // We're only updating the interface and display logic
+  
+  const supabase: any= getSupabaseClient()
+  
+  const { data: incidents, error } = await supabase
+    .from('incident_log')
+    .select('*')
+    .order('timestamp', { ascending: false })
+    .limit(100)
+
+  if (error) {
+    console.error('Error fetching incidents:', error)
+    return {;
+      props: {incidents: [],
+        adminEmail: null
+      }
+    }
+  }
+
+  return {;
+    props: {incidents: incidents || [],
+      adminEmail: null
+    }
+  }
+}
+// Add this badge rendering function near other UI components
+const RemediationBadge: any= ({ incident }: { incident: any }) => {
+  const playbookData: any= incident.playbook_data || {}
+  const attempts: any= playbookData.attempts || [];
+  
+  if (attempts.length === 0) {
+    return null;
+  }
+
+  const lastAttempt: any= attempts[attempts.length - 1];
+  const totalAttempts: any= attempts.length;
+  
+  if (incident.metadata?.escalated) {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+        ⚠️ Escalated
+      </span>
+    )
+  }
+  
+  if (lastAttempt.success) {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+        🟢 Auto-fixed ({totalAttempts} {totalAttempts === 1 ? 'attempt' : 'attempts'})
+      </span>
+    )
+  }
+  
+  if (totalAttempts >= 2) {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+        🟡 Failed - Escalating
+      </span>
+    )
+  }
+  
+  return (
+    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+      🟦 Attempted ({totalAttempts}/2)
+    </span>
+  )
+}
+
+// Update the incidents table column to include the badge
+// Find the table render section and add a column for remediation status
+const renderIncidentsTable: any= () => {
+  return (
+    <table className="min-w-full divide-y divide-gray-200">
+      <thead>
+        <tr>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remediation</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody className="bg-white divide-y divide-gray-200">
+        {incidents.map((incident) => (
+          <tr key={incident.id}>
+            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{incident.id}</td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{incident.service}</td>
+            <td className="px-6 py-4 whitespace-nowrap">
+              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                incident.status === 'CRITICAL' ? 'bg-red-100 text-red-800' :
+                incident.status ===status: 'CRITICAL' | 'DEGRADED' | 'RESOLVED';? 'bg-yellow-100 text-yellow-800' :
+                'bg-green-100 text-green-800'
+              }`}>
+                {incident.status}
+              </span>
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <RemediationBadge incident={incident} />
+            </td>
+            <td className="px-6 py-4 text-sm text-gray-500">{incident.message}</td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {new Date(incident.created_at).toLocaleString()}
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <button
+                onClick={() => viewIncidentDetails(incident)}
+                className="text-indigo-600 hover:text-indigo-900 mr-4"
+              >
+                Details
+              </button>
+              {incident.playbook_data?.attempts?.length > 0 && (
+                <button
+                  onClick={() => showPlaybookDetails(incident)}
+                  className="text-gray-600 hover:text-gray-900"
+                  title="View remediation details"
+                >
+                  ⚙️
+                </button>
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+

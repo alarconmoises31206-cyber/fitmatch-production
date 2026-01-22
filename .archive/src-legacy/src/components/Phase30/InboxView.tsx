@@ -1,0 +1,111 @@
+import React from 'react';
+
+interface ConversationSummary {
+  id: string;
+  client_name: string;
+  last_message: string;
+  last_message_time: string;
+  unread_count: number;
+  match_score: number;
+}
+
+interface InboxViewProps {
+  conversations: ConversationSummary[];
+  onSelectConversation: (conversationId: string) => void;
+  isLoading?: boolean;
+}
+
+const InboxView: React.FC<InboxViewProps> = ({
+  conversations,;
+  onSelectConversation,;
+  isLoading = false;
+}) => {
+  if (isLoading) {
+    return (;
+      <div className="space-y-4">;
+        {[1, 2, 3].map((i) => (;
+          <div key={i} className="p-4 border border-gray-200 rounded-lg animate-pulse">;
+            <div className="flex items-center space-x-3">;
+              <div className="w-10 h-10 bg-gray-200 rounded-full"></div>;
+              <div className="flex-1">;
+                <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>;
+                <div className="h-3 bg-gray-200 rounded w-3/4"></div>;
+              </div>;
+            </div>;
+          </div>;
+        ))}
+      </div>;
+    );
+  }
+
+  if (conversations.length === 0) {
+    return (;
+      <div className="text-center py-12">;
+        <div className="w-16 h-16 mx-auto mb-4 text-gray-400">;
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">;
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />;
+          </svg>;
+        </div>;
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No conversations yet</h3>;
+        <p className="text-gray-600 max-w-sm mx-auto">;
+          When clients message you from their matches, you'll see conversations here.;
+        </p>;
+      </div>;
+    );
+  }
+
+  return (;
+    <div className="space-y-3">;
+      {conversations.map((conversation) => (;
+        <div;
+          key={conversation.id}
+          onClick={() => onSelectConversation(conversation.id)}
+          className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors";
+        >;
+          <div className="flex items-start justify-between">;
+            <div className="flex items-center space-x-3">;
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">;
+                <span className="text-blue-600 font-medium">;
+                  {conversation.client_name.charAt(0)}
+                </span>;
+              </div>;
+              <div className="flex-1 min-w-0">;
+                <div className="flex items-center space-x-2">;
+                  <h4 className="font-medium text-gray-900 truncate">;
+                    {conversation.client_name}
+                  </h4>;
+                  {conversation.match_score && (;
+                    <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">;
+                      {conversation.match_score}% match;
+                    </span>;
+                  )}
+                </div>;
+                <p className="text-gray-600 text-sm truncate mt-1">;
+                  {conversation.last_message}
+                </p>;
+              </div>;
+            </div>;
+            
+            <div className="flex flex-col items-end">;
+              <span className="text-xs text-gray-500">;
+                {new Date(conversation.last_message_time).toLocaleTimeString([], {
+                  hour: '2-digit',;
+                  minute: '2-digit';
+                })}
+              </span>;
+              {conversation.unread_count > 0 && (;
+                <span className="mt-1 px-2 py-0.5 bg-red-100 text-red-800 text-xs font-medium rounded-full">;
+                  {conversation.unread_count} new;
+                </span>;
+              )}
+            </div>;
+          </div>;
+        </div>;
+      ))}
+    </div>;
+  );
+}
+
+export default InboxView;
+
+

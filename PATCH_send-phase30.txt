@@ -1,0 +1,22 @@
+﻿// ===== ADD THIS CODE TO YOUR EXISTING send-phase30.ts =====
+// Add this after successful message insertion (around line where you return success):
+
+// Compute conversation health metrics after sending message
+try {
+  const computeRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/conversations/compute-health`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.ADMIN_SECRET_TOKEN}`
+    },
+    body: JSON.stringify({ conversationId: conversation_id })
+  });
+  
+  if (!computeRes.ok) {
+    console.warn('Failed to compute conversation health, but message was sent');
+  }
+} catch (error) {
+  console.warn('Error computing conversation health:', error);
+  // Don't fail the message send if health computation fails
+}
+// ===== END OF ADDITION =====

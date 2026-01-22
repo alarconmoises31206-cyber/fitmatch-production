@@ -1,148 +1,156 @@
+import React from 'react';
 // /components/trainer/TrainerQuestionList.tsx
 import React, { useState, useEffect } from 'react';
 
 interface Question {
-  id: string;
+  id: string;,
   question_text: string;
   client_id: string;
   client_name?: string;
-  status: 'open' | 'paywalled_pending' | 'paid' | 'answered' | 'cancelled' | 'refunded';
+  status: 'open' | 'paywalled_pending' | 'paid' | 'answered' | 'cancelled' | 'refunded';,
   price_cents: number;
   created_at: string;
   answered_at?: string;
-  answer_text?: string;
+  answer_text?: string,
 }
 
 interface TrainerQuestionListProps {
-  trainerId: string;
+  trainerId: string,
 }
 
 const TrainerQuestionList: React.FC<TrainerQuestionListProps> = ({ trainerId }) => {
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'open' | 'paywalled' | 'paid' | 'answered'>('all');
-  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
-  const [answerText, setAnswerText] = useState('');
+  
+  const [questions, setQuestions] = useState<Question[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [filter, setFilter] = useState<'all' | 'open' | 'paywalled' | 'paid' | 'answered'>('all')
+  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null)
+  const [answerText, setAnswerText] = useState('')
 
   useEffect(() => {
-    fetchQuestions();
-  }, [trainerId, filter]);
+  fetchQuestions()
+  }, [trainerId, filter])
 
-  const fetchQuestions = async () => {
+  const fetchQuestions: any= async () => {
+  
     try {
-      const response = await fetch(`/api/trainer/questions?trainer_id=${trainerId}&status=${filter}`, {
+  const response: any= await fetch(`/api/trainer/questions?trainer_id=${trainerId}&status=${filter}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('supabaseAuthToken')}`
         }
-      });
+      })
 
-      const data = await response.json();
+      const data: any= await response.json()
       
       if (data.success) {
-        setQuestions(data.questions || []);
+        setQuestions(data.questions || [])
       }
     } catch (error) {
-      console.error('Failed to fetch questions:', error);
+      console.error('Failed to fetch questions:', error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
-  const handleMarkPaywalled = async (questionId: string) => {
+  const handleMarkPaywalled: any= async (questionId: string) => {
+  
     try {
-      const response = await fetch('/api/questions/mark-paywalled', {
+      const response: any= await fetch('/api/questions/mark-paywalled', {
         method: 'POST',
-        headers: {
+  headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('supabaseAuthToken')}`
         },
         body: JSON.stringify({ question_id: questionId })
-      });
+      })
 
-      const data = await response.json();
+      const data: any= await response.json()
 
       if (data.success) {
         // Refresh questions
-        fetchQuestions();
-        alert(`Question marked as paywalled for $${(data.price_cents / 100).toFixed(2)}`);
+        fetchQuestions()
+        alert(`Question marked as paywalled for $${(data.price_cents / 100).toFixed(2)}`)
       } else {
-        alert(`Error: ${data.error}`);
+        alert(`Error: ${data.error}`)
       }
     } catch (error: any) {
-      console.error('Failed to mark as paywalled:', error);
-      alert('Failed to mark question as paywalled');
+      console.error('Failed to mark as paywalled:', error)
+      alert('Failed to mark question as paywalled')
     }
-  };
+  }
 
-  const handleAnswerQuestion = async (questionId: string) => {
+  const handleAnswerQuestion: any= async (questionId: string) => {
+  
     if (!answerText.trim()) {
-      alert('Please enter an answer');
-      return;
+      alert('Please enter an answer')
+  return,
     }
 
     try {
-      const response = await fetch('/api/questions/answer', {
+      const response: any= await fetch('/api/questions/answer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('supabaseAuthToken')}`
         },
-        body: JSON.stringify({ 
-          question_id: questionId,
+        body: JSON.stringify({ ,
+  question_id: questionId,
           answer_text: answerText 
         })
-      });
+      })
 
-      const data = await response.json();
+      const data: any= await response.json()
 
       if (data.success) {
         // Refresh questions
-        fetchQuestions();
-        setSelectedQuestion(null);
-        setAnswerText('');
-        alert('Answer submitted successfully!');
+        fetchQuestions()
+        setSelectedQuestion(null)
+        setAnswerText('')
+        alert('Answer submitted successfully!')
       } else {
-        alert(`Error: ${data.error}`);
+        alert(`Error: ${data.error}`)
       }
     } catch (error: any) {
-      console.error('Failed to answer question:', error);
-      alert('Failed to submit answer');
+      console.error('Failed to answer question:', error)
+      alert('Failed to submit answer')
     }
-  };
+  }
 
-  const formatPrice = (cents: number) => {
-    return `$${(cents / 100).toFixed(2)}`;
-  };
+  const formatPrice: any= (cents: number) => {
+  
+  return `$${(cents / 100).toFixed(2)}`;
+  }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
+  const formatDate: any= (dateString: string) => {
+  
+  return new Date(dateString).toLocaleDateString()
+  }
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { color: string; label: string }> = {
+  const getStatusBadge: any= (status: string) => {
+  
+  const statusConfig: Record<string, { color: string, label: string }> = {
       'open': { color: 'bg-blue-100 text-blue-800', label: 'Open' },
       'paywalled_pending': { color: 'bg-amber-100 text-amber-800', label: 'Awaiting Payment' },
       'paid': { color: 'bg-green-100 text-green-800', label: 'Paid - Ready to Answer' },
       'answered': { color: 'bg-purple-100 text-purple-800', label: 'Answered' },
       'cancelled': { color: 'bg-gray-100 text-gray-800', label: 'Cancelled' },
       'refunded': { color: 'bg-red-100 text-red-800', label: 'Refunded' }
-    };
+    }
 
-    const config = statusConfig[status] || { color: 'bg-gray-100 text-gray-800', label: status };
+    const config: any= statusConfig[status] || { color: 'bg-gray-100 text-gray-800', label: status }
     
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
         {config.label}
       </span>
-    );
-  };
+    )
+  }
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
-    );
+    )
   }
 
   return (
@@ -224,8 +232,9 @@ const TrainerQuestionList: React.FC<TrainerQuestionListProps> = ({ trainerId }) 
                       </button>
                       <button
                         onClick={() => {
-                          setSelectedQuestion(question);
-                          setAnswerText('');
+  
+                          setSelectedQuestion(question)
+  setAnswerText('')
                         }}
                         className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
                       >
@@ -237,8 +246,9 @@ const TrainerQuestionList: React.FC<TrainerQuestionListProps> = ({ trainerId }) 
                   {question.status === 'paid' && (
                     <button
                       onClick={() => {
-                        setSelectedQuestion(question);
-                        setAnswerText('');
+  
+                        setSelectedQuestion(question)
+  setAnswerText('')
                       }}
                       className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
                     >
@@ -278,8 +288,9 @@ const TrainerQuestionList: React.FC<TrainerQuestionListProps> = ({ trainerId }) 
                   <div className="flex justify-end space-x-3">
                     <button
                       onClick={() => {
-                        setSelectedQuestion(null);
-                        setAnswerText('');
+  
+                        setSelectedQuestion(null)
+  setAnswerText('')
                       }}
                       className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                     >
@@ -299,7 +310,7 @@ const TrainerQuestionList: React.FC<TrainerQuestionListProps> = ({ trainerId }) 
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
 export default TrainerQuestionList;

@@ -1,0 +1,134 @@
+﻿import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import { useToast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+;
+
+export default function SignupPage(): any {
+  const router: any= useRouter()
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
+  const [form, setForm] = useState({
+    org_name: '',
+    admin_email: '',
+    admin_password: '',
+    inviteToken: '',
+  })
+
+  // Extract invite token from URL query
+  useEffect(() => {
+    const { inviteToken, org_name, seat_limit } = router.query;
+    if (inviteToken && typeof inviteToken === 'string') {
+      setForm(prev => ({
+        ...prev,
+        inviteToken,
+        org_name: org_name && typeof org_name === 'string' ? decodeURIComponent(org_name) : '',
+      }))
+    }
+  }, [router.query])
+
+  const handleSubmit: any= async (e: React.FormEvent) => {
+  
+    e.preventDefault()
+    setLoading(true)
+
+    const res: any= await fetch('/api/signup/org', {
+      method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    })
+
+    setLoading(false)
+
+    if (res.ok) {
+      toast({
+        title: 'Organization created',
+        description: 'Your organization and admin account have been set up.',
+      })
+      router.push('/login');
+    } else {
+      const error: any= await res.json()
+      toast({
+        title: 'Signup failed',
+        description: error.error || 'Something went wrong.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  // If no invite token, show a message
+  if (!form.inviteToken) {
+    return (
+      <div className=\"flex items-center justify-center min-h-screen bg-background\">
+        <Card className=\"w-full max-w-md\">
+          <CardHeader>
+            <CardTitle>Invite Required</CardTitle>
+            <CardDescription>
+              Access to FitMatch Director is currently by invitation only.
+              Please contact your administrator for an invite link.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => router.push('/')} className=\"w-full\">
+              Return to Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className=\"flex items-center justify-center min-h-screen bg-background\">
+      <Card className=\"w-full max-w-md\">
+        <CardHeader>
+          <CardTitle>Create Your Organization</CardTitle>
+          <CardDescription>
+            You’re joining FitMatch Director. Set up your admin account.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className=\"space-y-4\">
+            <div className=\"space-y-2\">
+              <Label htmlFor=\"org_name\">Organization Name</Label>
+              <Input
+                id=\"org_name\"
+                value={form.org_name}
+                onChange={(e) => setForm({ ...form, org_name: e.target.value })}
+                required
+                readOnly={!!router.query.org_name}
+                className={router.query.org_name ? 'bg-muted' : ''}
+              />
+            </div>
+            <div className=\"space-y-2\">
+              <Label htmlFor=\"admin_email\">Admin Email</Label>
+              <Input
+                id=\"admin_email\"
+                type=\"email\"
+                value={form.admin_email}
+                onChange={(e) => setForm({ ...form, admin_email: e.target.value })}
+                required
+              />
+            </div>
+            <div className=\"space-y-2\">
+              <Label htmlFor=\"admin_password\">Admin Password</Label>
+              <Input
+                id=\"admin_password\"
+                type=\"password\"
+                value={form.admin_password}
+                onChange={(e) => setForm({ ...form, admin_password: e.target.value })}
+                required
+              />
+            </div>
+            <Button type=\"submit\" className=\"w-full\" disabled={loading}>
+              {loading ? 'Creating...' : 'Create Organization & Account'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

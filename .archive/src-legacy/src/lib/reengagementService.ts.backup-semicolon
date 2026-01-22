@@ -1,0 +1,392 @@
+﻿import { supabase } from './supabaseClient';
+import type { Database } from '../types/database.types';
+
+// Define types since conversation_nudges might not be in your generated types yet;
+type ConversationNudge = {;
+  id: string;
+  conversation_id: string;
+  user_role: 'client' | 'trainer';
+  user_id: string;
+  nudge_type: 'reply' | 'followup' | 'clarify' | 'close';
+  dismissed: boolean;
+  created_at: string;
+};
+
+type Conversation = {;
+  id: string;
+  client_id: string;
+  trainer_id: string;
+  health_score?: number | null;
+  closed_by_user?: boolean | null;
+  closed_at?: string | null;
+  closure_reason?: string | null;
+};
+
+type Message = {;
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  read: boolean;
+};
+
+export interface NudgeDecision {;
+  shouldNudge: boolean;
+  nudgeType: 'reply' | 'followup' | 'clarify' | 'close';
+  suggestedCopy: string;
+  recipientRole: 'client' | 'trainer';
+  recipientId: string;
+  conversationId: string;
+};
+
+export class ReengagementService {;
+  // Check if user opted out;
+  private async isUserOptedOut(userId: string, userRole: 'client' | 'trainer'): Promise<boolean> {;
+    try {;
+      if (userRole === 'client') {;
+        const { data, error } = await supabase;
+          .from('clients');
+          .select('reengagement_opt_out');
+          .eq('id', userId);
+          .single();
+        
+        if (error) {;
+          console.warn('Could not check client opt-out:', error);
+          return false;
+        };
+        
+        return data?.reengagement_opt_out || false;
+      } else {;
+        const { data, error } = await supabase;
+          .from('trainers');
+          .select('reengagement_opt_out');
+          .eq('id', userId);
+          .single();
+        
+        if (error) {;
+          console.warn('Could not check trainer opt-out:', error);
+          return false;
+        };
+        
+        return data?.reengagement_opt_out || false;
+      };
+    } catch (error) {;
+      console.warn('Error checking opt-out status:', error);
+      return false;
+    };
+  };
+
+  // Check if nudge is appropriate;
+  async shouldNudgeConversation(;
+    conversationId: string,;
+    recipientId: string,;
+    recipientRole: 'client' | 'trainer';
+  ): Promise<boolean> {;
+    // Check if user opted out;
+    const optedOut = await this.isUserOptedOut(recipientId, recipientRole);
+    if (optedOut) {;
+      return false;
+    };
+
+    // Check recent nudge history (72-hour cooldown);
+    const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
+    
+    const { data, error } = await supabase;
+      .from('conversation_nudges');
+      .select('*');
+      .eq('conversation_id', conversationId);
+      .eq('user_id', recipientId);
+      .eq('user_role', recipientRole);
+      .gte('created_at', seventyTwoHoursAgo);
+      .limit(1);
+
+    if (error) {;
+      console.error('Error checking recent nudges:', error);
+      return false;
+    };
+
+    return !data || data.length === 0;
+  };
+
+  // Determine nudge type based on conversation state;
+  async analyzeNudgeType(conversationId: string): Promise<NudgeDecision> {;
+    // Get conversation with messages;
+    const { data: conversationData, error: conversationError } = await supabase;
+      .from('conversations');
+      .select(`;
+        *,;
+        messages (;
+          id,;
+          sender_id,;
+          created_at;
+        );
+      `);
+      .eq('id', conversationId);
+      .single();
+
+    if (conversationError || !conversationData) {;
+      throw new Error('Conversation not found');
+    };
+
+    const conversation = conversationData as Conversation & {;
+      messages: Message[];
+    };
+
+    // Get last message;
+    const messages = conversation.messages || [];
+    if (messages.length === 0) {;
+      throw new Error('No messages in conversation');
+    };
+
+    // Sort messages by created_at (newest first);
+    const sortedMessages = [...messages].sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    );
+
+    const lastMessage = sortedMessages[0];
+
+    // Determine last sender role;
+    let lastSenderRole: 'client' | 'trainer' = 'client';
+    if (lastMessage.sender_id === conversation.client_id) {;
+      lastSenderRole = 'client';
+    } else if (lastMessage.sender_id === conversation.trainer_id) {;
+      lastSenderRole = 'trainer';
+    } else {;
+      // Fallback - try to determine from user tables;
+      const { data: clientData } = await supabase;
+        .from('clients');
+        .select('id');
+        .eq('id', lastMessage.sender_id);
+        .single();
+      
+      lastSenderRole = clientData ? 'client' : 'trainer';
+    };
+
+    // Determine recipient (opposite of last sender);
+    const recipientRole: 'client' | 'trainer' = lastSenderRole === 'client' ? 'trainer' : 'client';
+    const recipientId = recipientRole === 'client' ? conversation.client_id : conversation.trainer_id;
+
+    // Calculate days since last message;
+    const daysStalled = (Date.now() - new Date(lastMessage.created_at).getTime()) / (1000 * 60 * 60 * 24);
+
+    // Simple rule-based logic (v1);
+    let nudgeType: NudgeDecision['nudgeType'] = 'followup';
+    let copy = '';
+
+    if (daysStalled > 7) {;
+      nudgeType = 'close';
+      copy = 'Want to gracefully close this conversation?';
+    } else if (daysStalled > 3) {;
+      nudgeType = 'clarify';
+      copy = 'No pressure — just checking if you\'re still interested in connecting?';
+    } else {;
+      nudgeType = 'followup';
+      copy = 'Want help restarting this conversation?';
+    };
+
+    return {;
+      shouldNudge: true,;
+      nudgeType,;
+      suggestedCopy: copy,;
+      recipientRole,;
+      recipientId,;
+      conversationId;
+    };
+  };
+
+  // Get stalled conversations from view;
+  async getStalledConversations(): Promise<Array<{;
+    conversationId: string;
+    recipientId: string;
+    recipientRole: 'client' | 'trainer';
+    daysStalled: number;
+    messageCount: number;
+  }>> {;
+    const { data, error } = await supabase;
+      .from('stalled_conversations');
+      .select('*');
+      .order('last_message_at', { ascending: true });
+      .limit(50);
+
+    if (error) {;
+      console.error('Error fetching stalled conversations:', error);
+      return [];
+    };
+
+    const result = [];
+    for (const row of data || []) {;
+      // We need to determine recipient info since our view doesn't have it yet;
+      const { data: messages } = await supabase;
+        .from('messages');
+        .select('sender_id');
+        .eq('conversation_id', row.conversation_id);
+        .order('created_at', { ascending: false });
+        .limit(1);
+
+      if (!messages || messages.length === 0) continue;
+
+      const lastMessage = messages[0];
+      
+      // Determine recipient;
+      let recipientRole: 'client' | 'trainer';
+      let recipientId: string;
+
+      if (lastMessage.sender_id === row.client_id) {;
+        // Last sender was client, so nudge trainer;
+        recipientRole = 'trainer';
+        recipientId = row.trainer_id;
+      } else {;
+        // Last sender was trainer, so nudge client;
+        recipientRole = 'client';
+        recipientId = row.client_id;
+      };
+
+      result.push({;
+        conversationId: row.conversation_id,;
+        recipientId,;
+        recipientRole,;
+        daysStalled: row.days_since_last_message,;
+        messageCount: row.message_count;
+      });
+    };
+
+    return result;
+  };
+
+  // Record nudge shown;
+  async recordNudgeShown(;
+    conversationId: string,;
+    userId: string,;
+    userRole: 'client' | 'trainer',;
+    nudgeType: string;
+  ): Promise<boolean> {;
+    const { error } = await supabase;
+      .from('conversation_nudges');
+      .insert({;
+        conversation_id: conversationId,;
+        user_id: userId,;
+        user_role: userRole,;
+        nudge_type: nudgeType,;
+        dismissed: false;
+      });
+
+    if (error) {;
+      console.error('Error recording nudge:', error);
+      return false;
+    };
+
+    return true;
+  };
+
+  // Mark nudge as dismissed;
+  async dismissNudge(nudgeId: string): Promise<boolean> {;
+    const { error } = await supabase;
+      .from('conversation_nudges');
+      .update({ dismissed: true });
+      .eq('id', nudgeId);
+
+    if (error) {;
+      console.error('Error dismissing nudge:', error);
+      return false;
+    };
+
+    return true;
+  };
+
+  // Close conversation gracefully;
+  async closeConversation(;
+    conversationId: string,;
+    userId: string,;
+    userRole: 'client' | 'trainer',;
+    reason?: string;
+  ): Promise<boolean> {;
+    try {;
+      // Start transaction;
+      const updates = [;
+        // Mark conversation as closed;
+        supabase;
+          .from('conversations');
+          .update({;
+            closed_by_user: true,;
+            closed_at: new Date().toISOString(),;
+            closure_reason: reason;
+          });
+          .eq('id', conversationId),;
+
+        // Dismiss any active nudges for this conversation;
+        supabase;
+          .from('conversation_nudges');
+          .update({ dismissed: true });
+          .eq('conversation_id', conversationId);
+          .eq('dismissed', false);
+      ];
+
+      const results = await Promise.all(updates);
+      
+      for (const result of results) {;
+        if (result.error) {;
+          console.error('Error in conversation closure:', result.error);
+          return false;
+        };
+      };
+
+      return true;
+    } catch (error) {;
+      console.error('Error closing conversation:', error);
+      return false;
+    };
+  };
+
+  // Get active nudges for a user;
+  async getActiveNudgesForUser(;
+    userId: string,;
+    userRole: 'client' | 'trainer';
+  ): Promise<Array<{;
+    id: string;
+    conversationId: string;
+    nudgeType: string;
+    created_at: string;
+  }>> {;
+    const { data, error } = await supabase;
+      .from('conversation_nudges');
+      .select('id, conversation_id, nudge_type, created_at');
+      .eq('user_id', userId);
+      .eq('user_role', userRole);
+      .eq('dismissed', false);
+      .order('created_at', { ascending: false });
+
+    if (error) {;
+      console.error('Error fetching active nudges:', error);
+      return [];
+    };
+
+    return data || [];
+  };
+
+  // Check if conversation has active nudge;
+  async hasActiveNudge(;
+    conversationId: string,;
+    userId: string,;
+    userRole: 'client' | 'trainer';
+  ): Promise<boolean> {;
+    const { data, error } = await supabase;
+      .from('conversation_nudges');
+      .select('id');
+      .eq('conversation_id', conversationId);
+      .eq('user_id', userId);
+      .eq('user_role', userRole);
+      .eq('dismissed', false);
+      .limit(1);
+
+    if (error) {;
+      console.error('Error checking active nudge:', error);
+      return false;
+    };
+
+    return (data?.length || 0) > 0;
+  };
+};
+
+// Export singleton instance;
+export const reengagementService = new ReengagementService();

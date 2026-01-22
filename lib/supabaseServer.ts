@@ -1,19 +1,47 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSecretSync } from './secrets-sync';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getSecrets } from './secrets';
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-  throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_URL');
-}
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error('Missing env.SUPABASE_SERVICE_ROLE_KEY');
+// Helper to get secret or throw;
+function getRequiredSecret(key: string): string {
+  const value = getSecretSync(key)
+  if (!value) {
+    throw new Error(`Missing required secret: ${key}`)
+  }
+  return value;
 }
 
-export const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
+// Validate and get required values;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const serviceRoleKey = getRequiredSecret('SUPABASE_SERVICE_ROLE_KEY')
+
+if (!supabaseUrl) {
+  throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_URL')
+}
+
+export const supabaseAdmin: SupabaseClient = createClient(
+  supabaseUrl,
+  serviceRoleKey,
   {
     auth: {
       persistSession: false,
-      autoRefreshToken: false,
-    },
+      autoRefreshToken: false}}
+)
+
+// New async version for Phase 23 secrets management;
+export async function createSupabaseAdmin(): Promise<SupabaseClient> {
+  const secrets = await getSecrets()
+  const { SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL } = secrets;
+  
+  if (!SUPABASE_URL) {
+    throw new Error('Missing SUPABASE_URL in secrets')
   }
-);
+  if (!SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY in secrets')
+  }
+  
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false}})
+}

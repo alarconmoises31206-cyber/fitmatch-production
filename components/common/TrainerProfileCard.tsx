@@ -1,116 +1,87 @@
-﻿import {
-  VerificationStatus,
-  VERIFICATION_BADGE_TEXTS,
-  VERIFICATION_COLORS,
-  VERIFICATION_TOOLTIPS
-} from '@/lib/types/verification';
+import React from 'react';
+import { Trainer } from '@/domain/schemas';
 
 interface TrainerProfileCardProps {
-  trainer: {
-    trainer_id: string;
-    first_name: string;
-    last_name: string;
-    headline?: string;
-    specialties?: string[];
-    verified_status?: VerificationStatus;
-    avatar_url?: string;
-    bio?: string;
-    experience_years?: number;
-    hourly_rate?: number;
-  };
-  onReveal?: () => void;
-  revealed?: boolean;
+  trainer: Trainer;
+  onSelect?: () => void;
+  className?: string,
 }
 
-export default function TrainerProfileCard({ trainer, onReveal, revealed = false }: TrainerProfileCardProps) {
-  const verificationBadge = trainer.verified_status && VERIFICATION_BADGE_TEXTS[trainer.verified_status];
-  const verificationColor = trainer.verified_status ? VERIFICATION_COLORS[trainer.verified_status] : 'gray';
-  const verificationTooltip = trainer.verified_status ? VERIFICATION_TOOLTIPS[trainer.verified_status] : 'Not verified';
-
+const TrainerProfileCard: React.FC<TrainerProfileCardProps> = ({
+  trainer,
+  onSelect,
+  className = ''
+}) => {
   return (
-    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-            <span className="text-blue-600 font-semibold">
+    <div className={`bg-white rounded-lg shadow p-6 ${className}`}>
+      <div className="flex items-start space-x-4">
+        {/* Trainer Avatar/Initials */}
+        <div className="flex-shrink-0">
+          <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
+            <span className="text-2xl font-bold text-indigo-600">
               {trainer.first_name?.[0]}{trainer.last_name?.[0]}
             </span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-gray-900">
-                {trainer.first_name} {trainer.last_name}
-                {trainer.verified_status && trainer.verified_status !== 'unverified' && (
-                  <span
-                    className={`ml-2 text-xs px-2 py-1 rounded-full ${
-                      trainer.verified_status === 'verified' 
-                        ? 'bg-green-100 text-green-800 border border-green-200' 
-                        : trainer.verified_status === 'elite' 
-                        ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' 
-                        : 'bg-gray-100 text-gray-800 border border-gray-200'
-                    }`}
-                  >
-                    {trainer.verified_status === 'verified' ? '✓ Verified' :
-                     trainer.verified_status === 'elite' ? '⭐ Elite' : ''}
-                  </span>
-                )}
-              </h3>
-            </div>
-            {trainer.headline && (
-              <p className="text-sm text-gray-600 mt-1">{trainer.headline}</p>
-            )}
-          </div>
         </div>
         
-        {onReveal && !revealed && (
-          <button
-            onClick={onReveal}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-          >
-            Reveal
-          </button>
-        )}
-      </div>
-
-      {trainer.specialties && trainer.specialties.length > 0 && (
-        <div className="mb-3">
-          <div className="flex flex-wrap gap-2">
-            {trainer.specialties.map((specialty, idx) => (
-              <span
-                key={idx}
-                className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded"
-              >
-                {specialty}
-              </span>
-            ))}
+        {/* Trainer Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {trainer.first_name} {trainer.last_name}
+              </h3>
+              {trainer.headline && (
+                <p className="text-sm text-gray-600 mt-1">
+                  {trainer.headline}
+                </p>
+              )}
+            </div>
+            
+            {/* Rating or status badge could go here */}
           </div>
+          
+          {/* Bio Preview */}
+          {trainer.bio && (
+            <p className="mt-3 text-gray-700 line-clamp-2">
+              {trainer.bio}
+            </p>
+          )}
+          
+          {/* Specialties */}
+          {trainer.specialties && trainer.specialties.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {trainer.specialties.slice(0, 3).map((specialty, index) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                >
+                  {specialty}
+                </span>
+              ))}
+              {trainer.specialties.length > 3 && (
+                <span className="text-xs text-gray-500">
+                  +{trainer.specialties.length - 3} more
+                </span>
+              )}
+            </div>
+          )}
         </div>
-      )}
-
-      <div className="text-sm text-gray-700 space-y-1">
-        {trainer.experience_years && (
-          <p>Experience: {trainer.experience_years} years</p>
-        )}
-        {trainer.hourly_rate && (
-          <p>Rate: ${trainer.hourly_rate}/hour</p>
-        )}
-        {trainer.bio && (
-          <p className="mt-2">{trainer.bio}</p>
-        )}
       </div>
-
-      {verificationBadge && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <div className="flex items-center gap-2">
-            <span
-              className={`text-xs font-medium px-2 py-1 rounded-full ${verificationColor} bg-opacity-10 border ${verificationColor.replace('text', 'border')} border-opacity-30`}
-              title={verificationTooltip}
-            >
-              {verificationBadge} {trainer.verified_status}
-            </span>
-          </div>
+      
+      {/* Action Button */}
+      {onSelect && (
+        <div className="mt-6">
+          <button
+            onClick={onSelect}
+            className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+          >
+            View Profile
+          </button>
         </div>
       )}
     </div>
-  );
+  )
 }
+
+export default TrainerProfileCard;

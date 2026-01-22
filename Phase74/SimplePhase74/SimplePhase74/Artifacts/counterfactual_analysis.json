@@ -1,0 +1,33 @@
+﻿{
+    "Summary":  {
+                    "SystemStability":  "Stable for minor changes, sensitive to major goal shifts",
+                    "DeterministicInsight":  "Same inputs always produce same outputs",
+                    "HighImpactScenarios":  0
+                },
+    "Scenarios":  [
+                      {
+                          "Analysis":  "Would reorder rankings: Strength coach moves to top",
+                          "Change":  "Client changes goal to \u0027bodybuilding\u0027",
+                          "Name":  "Change primary goal",
+                          "Impact":  "HIGH - Changes top match"
+                      },
+                      {
+                          "Analysis":  "Would filter out trainers without weekend availability",
+                          "Change":  "Client requires weekends only",
+                          "Name":  "Add availability constraint",
+                          "Impact":  "MEDIUM - Reduces pool size"
+                      },
+                      {
+                          "Analysis":  "Minimal impact on current rankings",
+                          "Change":  "Add \u0027flexibility\u0027 to goals",
+                          "Name":  "Minor goal adjustment",
+                          "Impact":  "LOW - Rankings stable"
+                      }
+                  ],
+    "Baseline":  {
+                     "SnapshotId":  "snapshot-20260110-183031-6968",
+                     "TopMatch":  "Strength Coach",
+                     "TopScore":  63
+                 },
+    "AnalysisId":  "counterfactual-20260110-183031"
+}

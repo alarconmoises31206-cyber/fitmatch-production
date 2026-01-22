@@ -1,0 +1,78 @@
+﻿    private async processQueue(): Promise<void> {
+        if (this.isProcessing || this.queue.length === 0) {
+            return;
+        }
+
+        this.isProcessing = true;
+
+        try {
+            // Find next message that's ready to process (not scheduled for future)
+            const now = new Date();
+            const readyMessageIndex = this.queue.findIndex(msg => 
+                !msg.scheduledFor || msg.scheduledFor <= now
+            );
+            
+            if (readyMessageIndex === -1) {
+                return; // No messages ready for processing
+            }
+
+            const message = this.queue.splice(readyMessageIndex, 1)[0];
+            if (!message) {
+                return;
+            }
+
+            debug("[InMemoryQueue] Processing message", {
+                messageId: message.id,
+                attempt: message.attempt,
+                maxAttempts: message.maxAttempts
+            });
+
+            let processingFailed = false;
+            let processingError: any = null;
+
+            // Execute all subscribers
+            const subscriberPromises = this.subscribers.map(async (handler) => {
+                try {
+                    await handler(message);
+                    return { success: true };
+                } catch (error) {
+                    error("[InMemoryQueue] Subscriber handler failed", {
+                        messageId: message.id,
+                        error
+                    });
+                    return { success: false, error };
+                }
+            });
+
+            const results = await Promise.allSettled(subscriberPromises);
+            
+            // Check if any subscribers failed
+            for (const result of results) {
+                if (result.status === "fulfilled") {
+                    if (result.value.success === false) {
+                        processingFailed = true;
+                        processingError = result.value.error;
+                        break;
+                    }
+                } else {
+                    // This shouldn't happen since we catch errors in the handler
+                    // but handle it just in case
+                    processingFailed = true;
+                    processingError = result.reason;
+                    break;
+                }
+            }
+
+            if (processingFailed) {
+                await this.handleFailedMessage(message, processingError);
+            } else {
+                await this.handleSuccessfulMessage(message);
+            }
+
+        } catch (error) {
+            error("[InMemoryQueue] Queue processing error", { error });
+        } finally {
+            this.isProcessing = false;
+            this.logQueueStats();
+        }
+    }

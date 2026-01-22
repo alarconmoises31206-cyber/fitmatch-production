@@ -1,0 +1,189 @@
+﻿import { useState, useEffect } from 'react';
+import BoundaryDisclosure from '../components/BoundaryDisclosure';
+import { useRouter } from 'next/router';
+
+// DEMONSTRATION DATA ONLY - Not connected to production backend (for trainer view)
+const mockClients = [ // Sample data for UI demonstration
+  { id: 'client1', name: 'Alex Johnson', goals: 'Weight loss & strength', compatibility: 92 },
+  { id: 'client2', name: 'Sarah Miller', goals: 'Marathon training', compatibility: 88 },
+  { id: 'client3', name: 'Mike Chen', goals: 'Rehabilitation', compatibility: 85 },
+  { id: 'client4', name: 'Jessica Brown', goals: 'Yoga & flexibility', compatibility: 82 },
+  { id: 'client5', name: 'David Wilson', goals: 'Bodybuilding', compatibility: 79 },
+];
+
+// Mock data for trainers (for client view)
+const mockTrainers = [
+  { id: 'trainer1', name: 'Alexandra Chen', specialty: 'Olympic Weightlifting Coach', compatibility: 96 },
+  { id: 'trainer2', name: 'Marcus Thompson', specialty: 'Functional Movement Specialist', compatibility: 94 },
+  { id: 'trainer3', name: 'Isabella Rodriguez', specialty: 'Yoga & Mindfulness Therapist', compatibility: 92 },
+  { id: 'trainer4', name: 'David Park', specialty: 'MMA & HIIT Conditioning Coach', compatibility: 91 },
+  { id: 'trainer5', name: 'Sophia Williams', specialty: 'Prenatal & Postnatal Specialist', compatibility: 90 },
+];
+
+export default function MatchesPage() {
+  const router = useRouter();
+  const [role, setRole] = useState<'client' | 'trainer'>('client');
+
+  // Load role from localStorage
+  useEffect(() => {
+    const savedRole = localStorage.getItem('userRole') as 'client' | 'trainer';
+    if (savedRole) {
+      setRole(savedRole);
+    }
+  }, []);
+
+  const handleRoleSwitch = (newRole: 'client' | 'trainer') => {
+    setRole(newRole);
+    localStorage.setItem('userRole', newRole);
+  };
+
+  const handleSendMessage = (match: any) => {
+    // Save conversation to localStorage
+    const conversations = JSON.parse(localStorage.getItem('fitmatch_conversations') || '[]');
+    const conversationId = 'conv_' + Date.now() + '_' + match.id;
+    const newConversation = {
+      id: conversationId,
+      otherPerson: { 
+        name: match.name, 
+        role: role === 'client' ? 'trainer' : 'client',
+        id: match.id,
+        specialty: match.specialty || match.goals
+      },
+      lastMessage: `Hi ${match.name}! I'd like to discuss ${match.specialty ? match.specialty.toLowerCase() : 'your services'}.`,
+      timestamp: new Date().toISOString(),
+      unread: true,
+      // Add initial message
+      messages: [
+        {
+          id: 'msg_' + Date.now(),
+          sender: 'user',
+          content: `Hi ${match.name}! I'd like to discuss ${match.specialty ? match.specialty.toLowerCase() : 'your services'}.`,
+          timestamp: new Date().toISOString()
+        }
+      ]
+    };
+    conversations.push(newConversation);
+    localStorage.setItem('fitmatch_conversations', JSON.stringify(conversations));
+    
+    // Redirect to the conversation page
+    router.push(`/messages/chat?id=${conversationId}`);
+  };
+
+  const currentMatches = role === 'client' ? mockTrainers : mockClients;
+  const matchType = role === 'client' ? 'trainers' : 'clients';
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Role switcher */}
+        <div className="mb-8 p-4 bg-white rounded-lg shadow">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Your Perfect {role === 'client' ? 'Trainer' : 'Client'} Matches
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Discover {matchType} who align with your goals, personality, and preferences
+              </p>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                className={`px-4 py-2 rounded ${role === 'client' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                onClick={() => handleRoleSwitch('client')}
+              >
+                Client View
+              </button>
+              <button
+                className={`px-4 py-2 rounded ${role === 'trainer' ? 'bg-green-600 text-white' : 'bg-gray-200'}`}
+                onClick={() => handleRoleSwitch('trainer')}
+              >
+                Trainer View
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-semibold text-gray-700">Total matches:</h3>
+            <p className="text-3xl font-bold text-gray-900">{currentMatches.length}</p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-semibold text-gray-700">All Matches</h3>
+            <p className="text-3xl font-bold text-gray-900">{currentMatches.length}</p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-semibold text-gray-700">
+              {role === 'client' ? 'Full FitMatch' : 'High Compatibility'}
+            </h3>
+            <p className="text-3xl font-bold text-gray-900">
+              {currentMatches.filter(m => m.compatibility >= 90).length}
+            </p>
+          </div>
+        </div>
+
+        {/* Matches grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {currentMatches.map((match) => (
+            <div key={match.id} className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900">{match.name}</h3>
+                    <p className="text-gray-600">{match.specialty || match.goals}</p>
+                  </div>
+                  <div className="flex items-center justify-between mb-2"><span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
+                    {match.compatibility}% Match
+                  </span><span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Demo</span></div>
+                
+                <div className="flex space-x-3 mt-6">
+                  <button
+                    className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200"
+                    onClick={() => alert(`View ${match.name} profile (feature not implemented)`)}
+                  >
+                    View Profile
+                  </button>
+                  <button
+                    className="flex-1 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                    onClick={() => handleSendMessage(match)}
+                  >
+                    Message
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Info box */}
+        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-blue-900 mb-2">
+            Ready to take the next step?
+          </h3>
+          <p className="text-blue-800 mb-4">
+            {role === 'client' 
+              ? 'Full FitMatch trainers have 90%+ compatibility with your preferences. Start a conversation to explore how they can help you achieve your goals.'
+              : 'High compatibility clients match well with your training style and expertise. Start a conversation to understand their goals better.'}
+          </p>
+          <div className="flex items-center space-x-4">
+            <span className="px-3 py-1 bg-blue-100 rounded">?? Message 1-2 {matchType}</span>
+            <span>?</span>
+            <span className="px-3 py-1 bg-blue-100 rounded">?? Schedule a discovery call</span>
+            <span>?</span>
+            <span className="px-3 py-1 bg-blue-100 rounded">?? Start your fitness journey</span><span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Demo</span></div>
+          <div className="mt-4 text-sm text-blue-700">
+            <p>?? Click "Message" to start a conversation and be redirected to the chat.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
+
+
+
+

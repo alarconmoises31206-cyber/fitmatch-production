@@ -1,0 +1,6 @@
+﻿{
+    "recommendations": [
+        "Include helpful type definitions here",
+        "Create src/types/global.d.ts for missing types"
+    ]
+}

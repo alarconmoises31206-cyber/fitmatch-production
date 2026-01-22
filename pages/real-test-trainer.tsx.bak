@@ -1,0 +1,346 @@
+import React from 'react';
+﻿// pages/real-test-trainer.tsx
+'use client';
+
+;
+
+export default function RealTestTrainer() {
+    const [results, setResults] = useState<any>(null)
+    const [loading, setLoading] = useState(false)
+
+    const testTrainerDiscovery: any= async () => {
+  
+        setLoading(true)
+        setResults(null)
+        
+        try {
+  const { createClient } = await import('@supabase/supabase-js')
+            const supabase: any= createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+            )
+            
+            const testResults: any = {,
+  timestamp: new Date().toISOString(),
+                tables: {},
+                trainersFound: [],
+                errors: []
+            }
+
+            // Test 1: Check profiles table (main trainer data)
+            try {
+                const { data: profilesData, error: profilesError, count: profilesCount } = await supabase
+                    .from('profiles')
+                    .select('*', { count: 'exact' })
+                    .limit(10)
+                
+                testResults.tables.profiles = {
+                    exists: !profilesError,
+                    error: profilesError?.message,
+                    count: profilesCount || 0,
+                    hasData: (profilesData && profilesData.length > 0)
+                }
+                
+                if (profilesData && profilesData.length > 0) {
+                    testResults.trainersFound = profilesData.map((profile: any) => ({,
+  id: profile.id,
+                        name: profile.full_name || `Trainer ${profile.id.substring(0, 8)}...`,
+                        specialization: profile.specialization || 'Not specified',
+                        bio: profile.bio ? profile.bio.substring(0, 100) + '...' : 'No bio',
+                        created: profile.created_at
+                    }))
+                }
+            } catch (profilesErr: any) {
+                testResults.errors.push(`Profiles error: ${profilesErr.message}`)
+            }
+
+            // Test 2: Check trainers table (if exists)
+            try {
+                const { data: trainersData, error: trainersError, count: trainersCount } = await supabase
+                    .from('trainers')
+                    .select('*', { count: 'exact' })
+                    .limit(5)
+                
+                testResults.tables.trainers = {
+                    exists: !trainersError,
+                    error: trainersError?.message,
+                    count: trainersCount || 0
+                }
+            } catch (trainersErr: any) {
+                // It's OK if this table doesn't exist
+                testResults.tables.trainers = {
+                    exists: false,
+                    error: 'Table might not exist (this is OK if using profiles table)'
+                }
+            }
+
+            // Test 3: Try to create a test trainer profile
+            try {
+                const testProfile: any= {
+                    full_name: 'Test Trainer ' + Date.now(),
+                    specialization: 'Test Specialization',
+                    bio: 'This is a test trainer profile created during validation',
+                    created_at: new Date().toISOString()
+                }
+                
+                const { data: newProfile, error: createError } = await supabase
+                    .from('profiles')
+                    .insert([testProfile])
+                    .select()
+                
+                testResults.canCreateProfile = !createError;
+                testResults.createError = createError?.message;
+                
+                // Clean up if we created one
+                if (newProfile && newProfile[0]) {
+                    await supabase
+                        .from('profiles')
+                        .delete()
+                        .eq('id', newProfile[0].id)
+                }
+            } catch (createErr: any) {
+                testResults.errors.push(`Create profile error: ${createErr.message}`)
+            }
+
+            setResults(testResults)
+        } catch (err: any) {
+            setResults({
+                error: err.message,
+                timestamp: new Date().toISOString()
+            })
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const getStatusColor: any= (status: string) => {
+  
+        switch (status) {
+            case 'EXISTS_WITH_DATA': return '#4caf50';
+            case 'EXISTS_EMPTY': return '#ff9800';
+            case 'MISSING': return '#f44336';
+  default: return '#9e9e9e',
+        }
+    }
+
+    const getStatusText: any= (tableInfo: any) => {
+  
+        if (!tableInfo || !tableInfo.exists) return '❌ MISSING';
+        if (tableInfo.hasData) return '✅ EXISTS WITH DATA';
+  return '⚠ EXISTS (EMPTY)',
+    }
+
+    return (
+        <div style={{ padding: '2rem', fontFamily: 'Arial, sans-serif' }}>
+            <h1>🔍 REAL Trainer Discovery Test</h1>
+            <p>Actually testing if trainer tables exist, have data, and work.</p>
+            
+            <button 
+                onClick={testTrainerDiscovery}
+                disabled={loading}
+                style={{
+                    padding: '1rem 2rem',
+                    backgroundColor: loading ? '#ccc' : '#9c27b0',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    marginTop: '1rem',
+                    fontWeight: 'bold'
+                }}
+            >
+                {loading ? 'Testing...' : 'Run REAL Trainer Discovery Test'}
+            </button>
+            
+            {results && (
+                <div style={{ marginTop: '2rem' }}>
+                    <h2>Test Results</h2>
+                    
+                    {results.error ? (
+                        <div style={{ 
+                            padding: '1rem', 
+                            backgroundColor: '#ffebee',
+                            color: '#c62828',
+                            borderRadius: '4px'
+                        }}>
+                            <h3>Error:</h3>
+                            <pre style={{ whiteSpace: 'pre-wrap' }}>{results.error}</pre>
+                        </div>
+                    ) : (
+                        <div>
+                            {/* Table Status */}
+                            <div style={{ 
+                                display: 'grid', 
+                                gridTemplateColumns: '1fr 1fr', 
+                                gap: '1rem',
+                                marginBottom: '2rem'
+                            }}>
+                                {/* Profiles */}
+                                <div style={{ 
+                                    padding: '1rem', 
+                                    backgroundColor: results.tables.profiles?.exists ? '#e8f5e9' : '#ffebee',
+                                    border: `2px solid ${results.tables.profiles?.exists ? '#4caf50' : '#f44336'}`,
+                                    borderRadius: '8px'
+                                }}>
+                                    <h3 style={{ margin: '0 0 0.5rem 0' }}>
+                                        profiles Table
+                                    </h3>
+                                    <p style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>
+                                        {getStatusText(results.tables.profiles)}
+                                    </p>
+                                    {results.tables.profiles?.exists && (
+                                        <>
+                                            <p style={{ margin: '0 0 0.5rem 0' }}>
+                                                <strong>Records:</strong> {results.tables.profiles.count}
+                                            </p>
+                                            <p style={{ margin: '0 0 0.5rem 0' }}>
+                                                <strong>Has Data:</strong> {results.tables.profiles.hasData ? '✅ YES' : '⚠ NO DATA YET'}
+                                            </p>
+                                            <p style={{ margin: '0' }}>
+                                                <strong>Can Create:</strong> {results.canCreateProfile ? '✅ YES' : '❌ NO'}
+                                            </p>
+                                        </>
+                                    )}
+                                    {results.tables.profiles?.error && (
+                                        <p style={{ margin: '0.5rem 0 0 0', color: '#d32f2f', fontSize: '0.875rem' }}>
+                                            Error: {results.tables.profiles.error}
+                                        </p>
+                                    )}
+                                </div>
+                                
+                                {/* Trainers */}
+                                <div style={{ 
+                                    padding: '1rem', 
+                                    backgroundColor: results.tables.trainers?.exists ? '#e8f5e9' : '#fff3e0',
+                                    border: `2px solid ${results.tables.trainers?.exists ? '#4caf50' : '#ff9800'}`,
+                                    borderRadius: '8px'
+                                }}>
+                                    <h3 style={{ margin: '0 0 0.5rem 0' }}>
+                                        trainers Table
+                                    </h3>
+                                    <p style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>
+                                        {results.tables.trainers?.exists ? '✅ EXISTS' : '⚠ OPTIONAL'}
+                                    </p>
+                                    {results.tables.trainers?.exists && (
+                                        <p style={{ margin: '0' }}>
+                                            <strong>Records:</strong> {results.tables.trainers.count}
+                                        </p>
+                                    )}
+                                    <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: '#666' }}>
+                                        Note: Many apps use only profiles table
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            {/* Trainers Found */}
+                            {results.trainersFound.length > 0 && (
+                                <div style={{ marginBottom: '2rem' }}>
+                                    <h3>Trainers Found ({results.trainersFound.length}):</h3>
+                                    <div style={{ 
+                                        display: 'grid', 
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                                        gap: '1rem',
+                                        marginTop: '1rem'
+                                    }}>
+                                        {results.trainersFound.map((trainer: any, index: number) => (
+                                            <div key={index} style={{
+                                                padding: '1rem',
+                                                border: '1px solid #e0e0e0',
+                                                borderRadius: '8px',
+                                                backgroundColor: '#f9f9f9'
+                                            }}>
+                                                <h4 style={{ margin: '0 0 0.5rem 0' }}>{trainer.name}</h4>
+                                                <div style={{ 
+                                                    padding: '0.25rem 0.5rem', 
+                                                    backgroundColor: '#e3f2fd',
+                                                    color: '#1976d2',
+                                                    borderRadius: '4px',
+                                                    fontSize: '0.875rem',
+                                                    display: 'inline-block',
+                                                    marginBottom: '0.5rem'
+                                                }}>
+                                                    {trainer.specialization}
+                                                </div>
+                                                <p style={{ 
+                                                    margin: '0.5rem 0 0 0', 
+                                                    fontSize: '0.875rem',
+                                                    color: '#666'
+                                                }}>
+                                                    {trainer.bio}
+                                                </p>
+                                                <p style={{ 
+                                                    margin: '0.5rem 0 0 0', 
+                                                    fontSize: '0.75rem',
+                                                    color: '#999'
+                                                }}>
+                                                    ID: {trainer.id.substring(0, 8)}...
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Overall Assessment */}
+                            <div style={{ 
+                                padding: '1rem', 
+                                backgroundColor: '#e3f2fd',
+                                borderRadius: '8px'
+                            }}>
+                                <h3>Trainer Discovery Assessment:</h3>
+                                <ul>
+                                    <li>
+                                        <strong>Primary table (profiles):</strong> 
+                                        {results.tables.profiles?.exists ? ' ✅ EXISTS' : ' ❌ MISSING'}
+                                        {results.tables.profiles?.exists && results.tables.profiles.hasData && ` with ${results.tables.profiles.count} trainers`}
+                                        {results.tables.profiles?.exists && !results.tables.profiles.hasData && ' (empty)'}
+                                    </li>
+                                    <li>
+                                        <strong>Can create profiles:</strong> 
+                                        {results.canCreateProfile ? ' ✅ YES' : ' ❌ NO'}
+                                    </li>
+                                    <li>
+                                        <strong>Trainer discovery functional:</strong> 
+                                        {results.tables.profiles?.exists ? ' ✅ YES' : ' ❌ NO'}
+                                    </li>
+                                </ul>
+                                
+                                {results.tables.profiles?.exists && !results.tables.profiles.hasData && (
+                                    <div style={{ 
+                                        marginTop: '1rem', 
+                                        padding: '0.75rem',
+                                        backgroundColor: '#fff3e0',
+                                        borderRadius: '4px'
+                                    }}>
+                                        <p style={{ margin: '0', fontWeight: 'bold' }}>⚠ Note:</p>
+                                        <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem' }}>
+                                            Table exists but has no data. Trainer discovery will work once trainers create profiles.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+            
+            <div style={{ 
+                marginTop: '2rem', 
+                padding: '1rem', 
+                backgroundColor: '#fff3e0',
+                borderRadius: '8px'
+            }}>
+                <h3>What this ACTUALLY tests:</h3>
+                <ul>
+                    <li>✅ Can we find trainer profiles? (REAL query)</li>
+                    <li>✅ Do tables actually exist? (not assuming)</li>
+                    <li>✅ Can we display trainer data? (UI ready)</li>
+                    <li>✅ Can new trainers join? (write capability)</li>
+                </ul>
+                <p style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>
+                    This tells us EXACTLY what works vs what we assumed.
+                </p>
+            </div>
+        </div>
+    )
+}

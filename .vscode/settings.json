@@ -1,0 +1,52 @@
+﻿{
+    // Force use of workspace TypeScript
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    
+    // Disable all automatic checking - we'll rely on command line
+    "typescript.validate.enable": false,
+    "javascript.validate.enable": false,
+    "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+    
+    // Only show errors on save
+    "typescript.reportStyleChecksAsWarnings": false,
+    "typescript.check.npmIsInstalled": false,
+    
+    // File watching
+    "typescript.tsserver.watchDirectory": "dynamicPolling",
+    "typescript.tsserver.maxTsServerMemory": 4096,
+    
+    // Editor settings
+    "editor.quickSuggestions": {
+        "strings": true
+    },
+    "editor.suggest.showStatusBar": true,
+    
+    // Exclusions
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/node_modules": true,
+        "**/.next": true,
+        "**/dist": true,
+        "**/build": true
+    },
+    
+    // Auto-fix on save
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit",
+        "source.organizeImports": "explicit"
+    },
+    
+    // Formatting
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    
+    // TypeScript preferences
+    "typescript.preferences.includePackageJsonAutoImports": "on",
+    "typescript.preferences.autoImportFileExcludePatterns": []
+}

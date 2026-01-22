@@ -1,0 +1,393 @@
+import React from 'react';
+// hooks/useEarningsPreview.ts
+;
+import { useQuota } from './useQuota';
+
+export interface EarningsPreview {
+
+  // Current earnings
+  tokensEarned: number;
+  tokensLocked: number;
+  tokensAvailable: number;
+  
+  // Projections
+  weeklyProjection: number;
+  monthlyProjection: number;
+  
+  // Withdrawal info
+  canWithdraw: boolean;
+  minWithdrawal: number;
+  nextWithdrawalDate?: string;
+  
+  // Upgrade comparison
+  freeTierEarnings: number;
+  paidTierEarnings: number;
+  earningsIncreasePercent: number;
+  
+  // Psychology framing
+  framing: {title: string;
+    subtitle: string;
+  ctaText: string;
+    unlockMessage: string,
+  
+}
+}
+
+export const useEarningsPreview: any= (trainerId?: string) => {
+  const { quotaStatus, loading: quotaLoading } = useQuota(trainerId)
+  const [earningsPreview, setEarningsPreview] = useState<EarningsPreview | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
+  const calculateEarningsPreview: any= useCallback(() => {
+  
+    if (!quotaStatus) return null,
+    
+  const { tokens } = quotaStatus;
+    
+    // Base calculations
+    const tokensEarned: any= tokens.earned;
+    const tokensLocked: any= tokens.locked;
+    const tokensAvailable: any= tokensEarned - tokensLocked;
+    
+    // Projections (conservative estimates)
+    // Assumes current earning rate continues
+    const weeklyEarningRate: any= tokensEarned / 4; // Assuming 4 weeks of data
+    const weeklyProjection: any= Math.round(weeklyEarningRate * 0.8) // 80% of current rate (conservative)
+    const monthlyProjection: any= Math.round(weeklyProjection * 4.3) // 4.3 weeks per month
+    
+    // Withdrawal info
+    const canWithdraw: any= tokensAvailable >= 100; // Minimum 100 tokens to withdraw
+    const minWithdrawal: any= 100;
+    
+    // Upgrade comparison
+    const freeTierEarnings: any= monthlyProjection;
+    const paidTierEarnings: any= Math.round(monthlyProjection * 2.5) // 2.5x more with paid tier
+    const earningsIncreasePercent: any= Math.round(((paidTierEarnings - freeTierEarnings) / freeTierEarnings) * 100)
+    
+    // Psychology framing based on tokens locked
+    let framing: any;
+    if (tokensLocked > 0) {
+      framing = {
+        title: `You have $${tokensLocked} waiting`,
+        subtitle: `Upgrade to unlock your earnings and start withdrawing`,
+        ctaText: 'Unlock Your Money',
+        unlockMessage: `Unlock $${tokensLocked} in earned tokens`
+      }
+    } else if (tokensEarned > 0) {
+      framing = {
+        title: `You've earned $${tokensEarned} so far`,
+        subtitle: `Upgrade to withdraw earnings and earn 2.5x more`,
+        ctaText: 'Increase Earnings',
+        unlockMessage: `Potential to earn $${paidTierEarnings - freeTierEarnings} more per month`
+      }
+    } else {
+      framing = {
+        title: 'Start earning on FitMatch',
+        subtitle: `Upgrade to unlock full earning potential (est. $${paidTierEarnings}/month)`,
+        ctaText: 'Start Earning',
+        unlockMessage: `Unlock estimated $${paidTierEarnings} monthly earnings`
+      }
+    }
+    
+    // Calculate next withdrawal date (next Monday if can't withdraw yet)
+    let nextWithdrawalDate: any;
+    if (!canWithdraw) {
+      const now: any= new Date()
+      const day: any= now.getDay()
+      const diff: any= day === 0 ? 1 : 8 - day, // Days until next Monday
+      const nextMonday: any= new Date(now)
+      nextMonday.setDate(now.getDate() + diff)
+      nextMonday.setHours(0, 0, 0, 0)
+      nextWithdrawalDate = nextMonday.toISOString()
+    }
+    
+    return {
+      tokensEarned,
+      tokensLocked,
+      tokensAvailable,
+      weeklyProjection,
+      monthlyProjection,
+      canWithdraw,
+      minWithdrawal,
+      nextWithdrawalDate,
+      freeTierEarnings,
+      paidTierEarnings,
+      earningsIncreasePercent,
+      framing
+    }
+  }, [quotaStatus])
+  
+  useEffect(() => {
+  
+    if (!quotaLoading) {
+      setLoading(false)
+      const preview: any= calculateEarningsPreview()
+      setEarningsPreview(preview)
+      
+      if (!preview && !quotaLoading) {
+  setError('Unable to calculate earnings preview')
+      }
+    }
+  }, [quotaLoading, calculateEarningsPreview])
+  
+  const refetch: any= useCallback(() => {
+  
+    setLoading(true)
+    const preview: any= calculateEarningsPreview()
+    setEarningsPreview(preview)
+  setLoading(false)
+  }, [calculateEarningsPreview])
+  
+  // Format currency
+  const formatCurrency: any= useCallback((tokens: number) => {
+  
+    // Assuming 1 token = $1 for simplicity
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+  maximumFractionDigits: 0
+    }).format(tokens)
+  }, [])
+  
+  // Get progress toward withdrawal
+  const getWithdrawalProgress: any= useCallback(() => {
+    if (!earningsPreview) return { percentage: 0, remaining: 0 }
+    
+    const { tokensAvailable, minWithdrawal } = earningsPreview;
+    const percentage: any= Math.min(100, (tokensAvailable / minWithdrawal) * 100)
+    const remaining: any= Math.max(0, minWithdrawal - tokensAvailable)
+    
+    return { percentage, remaining }
+  }, [earningsPreview])
+  
+  // Get time to withdrawal estimate
+  const getTimeToWithdrawal: any= useCallback(() => {
+  
+    if (!earningsPreview || earningsPreview.canWithdraw) {
+  return 'Ready to withdraw',
+    }
+    
+    const { tokensAvailable, weeklyProjection } = earningsPreview;
+    const remaining: any= 100 - tokensAvailable; // Min withdrawal is 100
+    
+    if (weeklyProjection <= 0) {
+      return 'Start earning to withdraw',
+    }
+    
+    const weeksNeeded: any= Math.ceil(remaining / weeklyProjection)
+    
+    if (weeksNeeded === 1) return '~1 week to withdrawal';
+    if (weeksNeeded <= 4) return `~${weeksNeeded} weeks to withdrawal`;
+    return `~${Math.ceil(weeksNeeded / 4)} months to withdrawal`;
+  }, [earningsPreview])
+  
+  return {
+    earningsPreview,
+    loading: loading || quotaLoading,
+    error,
+    refetch,
+    formatCurrency,
+    getWithdrawalProgress,
+    getTimeToWithdrawal
+  }
+}
+
+// Component for displaying earnings preview
+export const EarningsPreviewDisplay: React.FC<{
+  trainerId?: string;
+  compact?: boolean;
+  showUpgradeCTA?: boolean;
+  onUpgradeClick?: () => void,
+}> = ({ trainerId, compact = false, showUpgradeCTA = true, onUpgradeClick }) => {
+  
+  const { 
+    earningsPreview, 
+    loading, 
+    error,
+    formatCurrency,
+    getWithdrawalProgress,
+  getTimeToWithdrawal
+  } = useEarningsPreview(trainerId)
+  
+  if (loading) {
+    return (
+      <div className="animate-pulse">
+        <div className="h-32 bg-gray-100 rounded-lg"></div>
+      </div>
+    )
+  }
+  
+  if (error || !earningsPreview) {
+    return (
+      <div className="bg-gray-50 rounded-lg p-4">
+        <p className="text-sm text-gray-600">Earnings data unavailable</p>
+      </div>
+    )
+  }
+  
+  const { 
+    tokensEarned, 
+    tokensLocked, 
+    tokensAvailable,
+    weeklyProjection,
+    monthlyProjection,
+    canWithdraw,
+    framing,
+    paidTierEarnings,
+    earningsIncreasePercent
+  } = earningsPreview;
+  
+  const withdrawalProgress: any= getWithdrawalProgress()
+  const timeToWithdrawal: any= getTimeToWithdrawal()
+  
+  if (compact) {
+    return (
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900">Your Earnings</h4>
+            <p className="text-xs text-gray-600 mt-1">{framing.subtitle}</p>
+          </div>
+          {tokensLocked > 0 && (
+            <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
+              ${tokensLocked} locked
+            </span>
+          )}
+        </div>
+        
+        <div className="mb-3">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-2xl font-bold text-gray-900">
+              {formatCurrency(tokensEarned)}
+            </span>
+            <span className="text-sm text-green-600 font-medium">
+              +{earningsIncreasePercent}% potential
+            </span>
+          </div>
+          <div className="text-xs text-gray-500">
+            Est. {formatCurrency(monthlyProjection)}/month free � {formatCurrency(paidTierEarnings)}/month paid
+          </div>
+        </div>
+        
+        {showUpgradeCTA && (
+          <button
+            onClick={onUpgradeClick}
+            className="w-full py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            {framing.ctaText}
+          </button>
+        )}
+      </div>
+    )
+  }
+  
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">{framing.title}</h3>
+          <p className="text-sm text-gray-600 mt-1">{framing.subtitle}</p>
+        </div>
+        
+        {tokensLocked > 0 && (
+          <div className="px-3 py-1.5 bg-orange-100 text-orange-800 text-sm font-medium rounded-full">
+            ${tokensLocked} Locked
+          </div>
+        )}
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        {/* Current Earnings */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Total Earned</h4>
+          <div className="text-2xl font-bold text-gray-900 mb-1">
+            {formatCurrency(tokensEarned)}
+          </div>
+          <div className="text-xs text-gray-500">
+            {tokensAvailable > 0 
+              ? `${formatCurrency(tokensAvailable)} available to withdraw`
+              : 'Start earning to withdraw'
+            }
+          </div>
+        </div>
+        
+        {/* Weekly Projection */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Weekly Projection</h4>
+          <div className="text-2xl font-bold text-gray-900 mb-1">
+            {formatCurrency(weeklyProjection)}
+          </div>
+          <div className="text-xs text-gray-500">
+            Based on current activity
+          </div>
+        </div>
+        
+        {/* Monthly Projection */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Monthly Potential</h4>
+          <div className="text-2xl font-bold text-gray-900 mb-1">
+            {formatCurrency(paidTierEarnings)}
+          </div>
+          <div className="text-xs text-gray-500">
+            {earningsIncreasePercent}% more than free
+          </div>
+        </div>
+      </div>
+      
+      {/* Withdrawal Progress */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <h4 className="text-sm font-medium text-gray-700">
+            Progress to Withdrawal
+          </h4>
+          <span className="text-sm text-gray-500">{timeToWithdrawal}</span>
+        </div>
+        
+        <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-1">
+          <div 
+            className="h-full bg-green-500 transition-all duration-300"
+            style={{ width: `${withdrawalProgress.percentage}%` }}
+          />
+        </div>
+        
+        <div className="flex justify-between">
+          <span className="text-xs text-gray-500">
+            {canWithdraw 
+              ? 'Ready to withdraw!' 
+              : `${formatCurrency(withdrawalProgress.remaining)} needed`
+            }
+          </span>
+          <span className="text-xs text-gray-500">
+            Minimum: {formatCurrency(100)}
+          </span>
+        </div>
+      </div>
+      
+      {/* Upgrade Comparison */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100 p-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-sm font-medium text-blue-800">
+              {framing.unlockMessage}
+            </p>
+            <p className="text-xs text-blue-600 mt-0.5">
+              Plus: Unlimited matches, priority ranking, and more
+            </p>
+          </div>
+          
+          {showUpgradeCTA && (
+            <button
+              onClick={onUpgradeClick}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+            >
+              {framing.ctaText}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+

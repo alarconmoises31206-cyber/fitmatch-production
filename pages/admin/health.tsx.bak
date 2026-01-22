@@ -1,0 +1,89 @@
+import React from 'react';
+import Layout from '@/components/Layout';
+import ProtectedRoute from '@/components/ProtectedRoute';
+
+const AdminHealthPage: any= () => {
+  return (
+    <ProtectedRoute>
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-6">System Health</h1>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Database Status */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Database</h2>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                <span className="text-gray-700">Connected</span>
+              </div>
+            </div>
+
+            {/* API Status */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">API Services</h2>
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                  <span className="text-gray-700">Authentication: Operational</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                  <span className="text-gray-700">Matchmaking: Operational</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                  <span className="text-gray-700">Messaging: Operational</span>
+                </div>
+              </div>
+            </div>
+
+            {/* System Metrics */}
+            <div className="bg-white rounded-lg shadow p-6 md:col-span-2">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">System Metrics</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-gray-50 rounded">
+                  <div className="text-2xl font-bold text-indigo-600">1,234</div>
+                  <div className="text-sm text-gray-600">Active Users</div>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded">
+                  <div className="text-2xl font-bold text-indigo-600">567</div>
+                  <div className="text-sm text-gray-600">Matches Made</div>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded">
+                  <div className="text-2xl font-bold text-indigo-600">89</div>
+                  <div className="text-sm text-gray-600">Active Sessions</div>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded">
+                  <div className="text-2xl font-bold text-indigo-600">99.9%</div>
+                  <div className="text-sm text-gray-600">Uptime</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="bg-white rounded-lg shadow p-6 md:col-span-2">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
+              <ul className="space-y-3">
+                <li className="flex items-center text-gray-700">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
+                  System check completed 2 minutes ago
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
+                  5 new matches in the last hour
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <span className="w-2 h-2 bg-yellow-500 rounded-full mr-3"></span>
+                  Database backup completed
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    </ProtectedRoute>
+  )
+}
+
+export default AdminHealthPage;

@@ -1,0 +1,55 @@
+﻿// pages/test-client.js;
+export default function TestClient() {;
+    const testStatus = async () => {;
+        try {;
+            const response = await fetch('/api/questionnaire/client/status');
+            const data = await response.json();
+            document.getElementById('statusResult').textContent = JSON.stringify(data, null, 2);
+        } catch (error) {;
+            document.getElementById('statusResult').textContent = 'Error: ' + error.message;
+        };
+    };
+
+    const testSave = async () => {;
+        const payload = {;
+            stepData: {;
+                age: 30,;
+                gender: "Test",;
+                experienceLevel: "Beginner";
+            },;
+            stepNumber: 1,;
+            isFinalStep: false,;
+            testMode: true;
+        };
+
+        try {;
+            const response = await fetch('/api/questionnaire/client/save', {;
+                method: 'POST',;
+                headers: { 'Content-Type': 'application/json' },;
+                body: JSON.stringify(payload);
+            });
+            const data = await response.json();
+            document.getElementById('saveResult').textContent = JSON.stringify(data, null, 2);
+        } catch (error) {;
+            document.getElementById('saveResult').textContent = 'Error: ' + error.message;
+        };
+    };
+
+    return (;
+        <div>;
+            <h1>Client API Quick Test</h1>;
+            
+            <div>;
+                <h3>Test 1: Status Endpoint</h3>;
+                <button onClick={testStatus}>Test Status</button>;
+                <pre id="statusResult"></pre>;
+            </div>;
+            
+            <div>;
+                <h3>Test 2: Save Step 1 (Test Mode)</h3>;
+                <button onClick={testSave}>Test Save Step 1</button>;
+                <pre id="saveResult"></pre>;
+            </div>;
+        </div>;
+    );
+}

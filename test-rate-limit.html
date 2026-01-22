@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Phase 22 Rate Limit Test</title>
+  <script>
+    async function testRateLimit() {
+      const results = document.getElementById('results');
+      results.innerHTML = 'Testing...';
+      
+      try {
+        const response = await fetch('http://localhost:3000/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: 'test@test.com', password: 'test' })
+        });
+        
+        const headers = {};
+        response.headers.forEach((value, key) => {
+          headers[key] = value;
+        });
+        
+        const data = await response.json();
+        
+        results.innerHTML = `
+          <h3>Response Status: ${response.status}</h3>
+          <h4>Rate Limit Headers:</h4>
+          <pre>${JSON.stringify(headers, null, 2)}</pre>
+          <h4>Response Body:</h4>
+          <pre>${JSON.stringify(data, null, 2)}</pre>
+        `;
+      } catch (error) {
+        results.innerHTML = `Error: ${error.message}`;
+      }
+    }
+  </script>
+</head>
+<body>
+  <h1>Phase 22 Rate Limiting Test</h1>
+  <button onclick="testRateLimit()">Test Login Endpoint</button>
+  <div id="results" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;"></div>
+</body>
+</html>

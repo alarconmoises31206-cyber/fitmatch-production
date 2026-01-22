@@ -1,0 +1,319 @@
+﻿import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useToast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Mail, CheckCircle, XCircle } from 'lucide-react';
+
+interface OrgUser {
+  id: string;
+  email: string;
+  role: 'admin' | 'member';
+  status: 'pending' | 'active' | 'revoked';
+  joined_at?: string;
+}
+
+interface DomainVerification {
+  id: string;
+  domain: string;
+  verification_method: 'email' | 'dns';
+  verified_at?: string;
+}
+
+interface JoinRequest {
+  id: string;
+  email: string;
+  domain: string;
+  requested_at: string;
+}
+
+export default function OrgAccessPage() {
+  const { data: session } = useSession();
+  const { toast } = useToast();
+  const [org, setOrg] = useState<any>(null);
+  const [users, setUsers] = useState<OrgUser[]>([]);
+  const [domainVerifications, setDomainVerifications] = useState<DomainVerification[]>([]);
+  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [newDomain, setNewDomain] = useState('');
+
+  const fetchOrgData = async () => {
+    if (!session?.user?.id) return;
+    setLoading(true);
+    // Assume we have an org ID from user session or context
+    const orgId = localStorage.getItem('current_org_id'); // Simplified; use context/state
+    if (!orgId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const [orgRes, usersRes, domainsRes, requestsRes] = await Promise.all([
+        fetch(\/api/orgs/\\),
+        fetch(\/api/org/admin/users?org_id=\\),
+        fetch(\/api/org/admin/domain?org_id=\\),
+        fetch(\/api/org/admin/join-requests?org_id=\\),
+      ]);
+
+      if (orgRes.ok) setOrg(await orgRes.json());
+      if (usersRes.ok) setUsers(await usersRes.json());
+      if (domainsRes.ok) setDomainVerifications(await domainsRes.json());
+      if (requestsRes.ok) setJoinRequests(await requestsRes.json());
+    } catch (error) {
+      console.error('Failed to fetch org data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrgData();
+  }, [session]);
+
+  const handleInvite = async () => {
+    if (!inviteEmail || !org) return;
+    const res = await fetch('/api/org/admin/invites/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        org_id: org.id,
+        email: inviteEmail,
+        role: 'member',
+      }),
+    });
+    if (res.ok) {
+      toast({ title: 'Invite sent', description: \Invite sent to \\ });
+      setInviteEmail('');
+      fetchOrgData();
+    } else {
+      const error = await res.json();
+      toast({ title: 'Invite failed', description: error.error, variant: 'destructive' });
+    }
+  };
+
+  const handleVerifyDomain = async () => {
+    if (!newDomain || !org) return;
+    const res = await fetch('/api/org/admin/domain/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        org_id: org.id,
+        domain: newDomain,
+        verification_method: 'email',
+      }),
+    });
+    if (res.ok) {
+      toast({ title: 'Verification initiated', description: 'Check your email to verify domain.' });
+      setNewDomain('');
+    } else {
+      const error = await res.json();
+      toast({ title: 'Failed', description: error.error, variant: 'destructive' });
+    }
+  };
+
+  const handleJoinRequest = async (requestId: string, action: 'approve' | 'deny') => {
+    const res = await fetch(\/api/org/admin/join-requests/\\, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
+    });
+    if (res.ok) {
+      toast({ title: \Request \d\ });
+      fetchOrgData();
+    } else {
+      const error = await res.json();
+      toast({ title: 'Action failed', description: error.error, variant: 'destructive' });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className=\"flex items-center justify-center min-h-screen\">
+        <Loader2 className=\"h-8 w-8 animate-spin\" />
+      </div>
+    );
+  }
+
+  return (
+    <div className=\"container mx-auto p-6 space-y-8\">
+      <div className=\"flex justify-between items-center\">
+        <h1 className=\"text-3xl font-bold\">Organization Access Control</h1>
+        <div className=\"text-sm text-muted-foreground\">
+          Seats: <strong>{users.filter(u => u.status === 'active').length}</strong> / {org?.seat_limit || 0}
+        </div>
+      </div>
+
+      <Tabs defaultValue=\"users\">
+        <TabsList>
+          <TabsTrigger value=\"users\">Users & Invites</TabsTrigger>
+          <TabsTrigger value=\"domains\">Domain Verification</TabsTrigger>
+          <TabsTrigger value=\"requests\">Join Requests</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value=\"users\">
+          <Card>
+            <CardHeader>
+              <CardTitle>Invite New User</CardTitle>
+              <CardDescription>Invite users to join your organization.</CardDescription>
+            </CardHeader>
+            <CardContent className=\"space-y-4\">
+              <div className=\"flex space-x-2\">
+                <Input
+                  placeholder=\"user@example.com\"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
+                <Button onClick={handleInvite} disabled={!inviteEmail}>
+                  <Mail className=\"mr-2 h-4 w-4\" /> Send Invite
+                </Button>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Joined</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            user.status === 'active'
+                              ? 'default'
+                              : user.status === 'pending'
+                              ? 'outline'
+                              : 'destructive'
+                          }
+                        >
+                          {user.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {user.joined_at ? new Date(user.joined_at).toLocaleDateString() : '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value=\"domains\">
+          <Card>
+            <CardHeader>
+              <CardTitle>Verified Domains</CardTitle>
+              <CardDescription>
+                Users with verified domain emails can request to join automatically.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className=\"space-y-4\">
+              <div className=\"flex space-x-2\">
+                <Input
+                  placeholder=\"example.com\"
+                  value={newDomain}
+                  onChange={(e) => setNewDomain(e.target.value)}
+                />
+                <Button onClick={handleVerifyDomain} disabled={!newDomain}>
+                  Verify Domain
+                </Button>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Domain</TableHead>
+                    <TableHead>Method</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Verified At</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {domainVerifications.map((dv) => (
+                    <TableRow key={dv.id}>
+                      <TableCell>{dv.domain}</TableCell>
+                      <TableCell>{dv.verification_method}</TableCell>
+                      <TableCell>
+                        {dv.verified_at ? (
+                          <Badge variant=\"default\">Verified</Badge>
+                        ) : (
+                          <Badge variant=\"outline\">Pending</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {dv.verified_at ? new Date(dv.verified_at).toLocaleDateString() : '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value=\"requests\">
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending Join Requests</CardTitle>
+              <CardDescription>
+                Users with verified domain emails requesting to join.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Domain</TableHead>
+                    <TableHead>Requested At</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {joinRequests.map((req) => (
+                    <TableRow key={req.id}>
+                      <TableCell>{req.email}</TableCell>
+                      <TableCell>
+                        <Badge variant=\"secondary\">{req.domain}</Badge>
+                      </TableCell>
+                      <TableCell>{new Date(req.requested_at).toLocaleDateString()}</TableCell>
+                      <TableCell className=\"space-x-2\">
+                        <Button
+                          size=\"sm\"
+                          onClick={() => handleJoinRequest(req.id, 'approve')}
+                        >
+                          <CheckCircle className=\"h-4 w-4 mr-1\" /> Approve
+                        </Button>
+                        <Button
+                          size=\"sm\"
+                          variant=\"destructive\"
+                          onClick={() => handleJoinRequest(req.id, 'deny')}
+                        >
+                          <XCircle className=\"h-4 w-4 mr-1\" /> Deny
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

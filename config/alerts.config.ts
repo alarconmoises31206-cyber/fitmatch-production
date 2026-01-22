@@ -1,0 +1,1 @@
+export const ALERT_CONFIG = { pollingIntervalMs: 30000, slackWebhookUrl: process.env.SLACK_WEBHOOK_URL, emailRecipients: ["engineering@project.com"], rules: { degraded: true, critical: true, queueBacklogThreshold: 10, redisDown: true, dbDown: true }, cooldownMinutes: 10 }

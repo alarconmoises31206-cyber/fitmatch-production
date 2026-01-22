@@ -1,0 +1,12 @@
+﻿// Stub supabase client for testing
+export const supabase = {
+  from: (table: string) => ({
+    insert: (data: any) => Promise.resolve({ error: null }),
+    update: (data: any) => ({
+      eq: (column: string, value: any) => Promise.resolve({ error: null })
+    }),
+    select: (columns: string, options?: any) => ({
+      eq: (column: string, value: any) => Promise.resolve({ data: [], error: null })
+    })
+  })
+};

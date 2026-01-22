@@ -1,0 +1,90 @@
+﻿import DashboardLayout from '../components/dashboard/DashboardLayout';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import DashboardContent from '../components/dashboard/DashboardContent';
+import BoundaryDisclosure from '../components/BoundaryDisclosure';
+
+export default function ProfilePage() {
+  const router = useRouter();
+  const [role, setRole] = useState("client");
+  const [loading, setLoading] = useState(false);
+
+  // Mock profile data for smoke test
+  const profile = {
+    id: 'test-id',
+    name: 'Test Client',
+    email: 'client@example.com'
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+          <div className="text-lg">Loading...</div>
+        </div>
+      
+    );
+  }
+
+  return (
+    <DashboardContent role={role}>
+        <div className="p-6">
+          <h1 className="text-3xl font-bold mb-6">
+            {role === "client" ? "Client" : "Trainer"} Profile
+          </h1>
+          
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Profile Information</h2>
+            <p><strong>Name:</strong> {profile.name}</p>
+            <p><strong>Email:</strong> {profile.email}</p>
+            <p><strong>ID:</strong> {profile.id}</p>
+            <p><strong>Role:</strong> {role}</p>
+            
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+              <div className="flex items-center mb-2"><h3 className="font-semibold">Role Switcher (Smoke Test)</h3><span className="ml-2 bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">Testing Only</span></div>
+              <div className="flex space-x-2">
+                <button 
+                  className={`px-4 py-2 rounded ${role === "client" ? "bg-blue-600 text-white" : "bg-gray-300"}`}
+                  onClick={() => setRole("client")}
+                >
+                  Client View
+                </button>
+                <button 
+                  className={`px-4 py-2 rounded ${role === "trainer" ? "bg-green-600 text-white" : "bg-gray-300"}`}
+                  onClick={() => setRole("trainer")}
+                >
+                  Trainer View
+                </button>
+              </div>
+              <p className="mt-2 text-sm text-gray-600">Use this to test role-specific functionality</p>
+            </div>
+
+            <div className="mt-6 flex space-x-4">
+              <button 
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                onClick={() => {
+                  console.log("Navigating to matches");
+                  router.push('/matches');
+                }}
+              >
+                Go to Matches
+              </button>
+              
+              <button 
+                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                onClick={() => {
+                  console.log("Navigating to messages");
+                  router.push('/messages');
+                }}
+              >
+                Go to Messages
+              </button>
+            </div>
+          </div>
+        </div>
+      </DashboardContent>
+    
+  );
+}
+
+
+

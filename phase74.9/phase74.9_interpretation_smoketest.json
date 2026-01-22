@@ -1,0 +1,66 @@
+{
+  "phase": "74.9.5",
+  "test_date": "$(Get-Date -Format 'yyyy-MM-dd')",
+  "neutral_prompts": [
+    {
+      "id": "prompt_1",
+      "question": "What do you think this system does?",
+      "expected_attributes": [
+        "Matches users with trainers",
+        "Evaluates compatibility",
+        "Provides explanations for matches"
+      ],
+      "misleading_signals_to_watch": [
+        "Implies payment processing",
+        "Suggests complete messaging platform",
+        "Indicates trainer management tools"
+      ]
+    },
+    {
+      "id": "prompt_2", 
+      "question": "What parts seem unfinished vs complete?",
+      "expected_identification": [
+        "Complete: Authentication, basic matching UI",
+        "Unfinished: Payment flows, trainer dashboard",
+        "Placeholder: 'How it works' icons, purchase buttons"
+      ],
+      "success_criteria": "Reviewer correctly identifies =80% of placeholder elements"
+    },
+    {
+      "id": "prompt_3",
+      "question": "Where would you place responsibility for errors?",
+      "expected_attribution": [
+        "System: Match accuracy, explanation quality",
+        "Presentation: UI bugs, navigation issues", 
+        "Out of scope: Payment failures, message delivery"
+      ],
+      "pass_condition": "Clear distinction between system vs presentation errors"
+    },
+    {
+      "id": "prompt_4",
+      "question": "What functionality would you expect to persist between sessions?",
+      "expected_understanding": [
+        "Would persist: User accounts, match preferences",
+        "Might not persist: Chat messages, form data (if localStorage)",
+        "Clearly out of scope: Payment history, trainer profiles"
+      ]
+    },
+    {
+      "id": "prompt_5",
+      "question": "How would you describe the system's current capabilities to a new user?",
+      "expected_clarity": [
+        "Clear boundary between implemented and future features",
+        "No overpromising on unavailable functionality",
+        "Accurate description of current evaluation scope"
+      ]
+    }
+  ],
+  "pass_conditions": {
+    "overall": "Reviewers correctly attribute responsibility =80% of the time",
+    "specific": [
+      "No confusion about payment functionality",
+      "Clear understanding of localStorage limitations",
+      "Accurate identification of placeholder elements"
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+﻿{
+    "SnapshotId":  "4b1af41b-0002-4778-a331-b2c280aefbb3",
+    "CaptureTime":  "\/Date(1768086174926)\/",
+    "MatchEngineVersion":  "1.0",
+    "Inputs":  {
+                   "Client":  {
+                                  "id":  "debug-test"
+                              },
+                   "Request":  {
+                                   "Limit":  10,
+                                   "TokenBudget":  null
+                               }
+               },
+    "Configuration":  {
+                          "Test":  "config"
+                      },
+    "TrainerProfiles":  [
+                            {
+                                "id":  "t1"
+                            }
+                        ],
+    "Results":  [
+                    {
+                        "TrainerId":  "t1",
+                        "Score":  85
+                    }
+                ],
+    "EmbeddingHash":  "debug",
+    "SnapshotHash":  "b8d084d7564c465815fa0e751281273d5f2934613d60f87295c14834e88a6659"
+}

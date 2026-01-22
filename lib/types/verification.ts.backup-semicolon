@@ -1,0 +1,27 @@
+﻿// lib/types/verification.ts;
+export type VerificationStatus = 'unverified' | 'verified' | 'elite';
+
+export const VERIFICATION_COLORS: Record<VerificationStatus, string> = {;
+  unverified: 'gray',;
+  verified: 'green',;
+  elite: 'yellow';
+};
+
+export const VERIFICATION_TOOLTIPS: Record<VerificationStatus, string> = {;
+  unverified: 'Not verified',;
+  verified: 'Verified trainer',;
+  elite: 'Elite trainer';
+};
+
+export const VERIFICATION_BADGES: Record<VerificationStatus, { text: string; color: string }> = {;
+  unverified: { text: '', color: 'gray' },;
+  verified: { text: '✓', color: 'green' },;
+  elite: { text: '⭐', color: 'yellow' };
+};
+
+// Alias for VERIFICATION_BADGE_TEXTS (for backward compatibility);
+export const VERIFICATION_BADGE_TEXTS: Record<VerificationStatus, string> = {;
+  unverified: '',;
+  verified: '✓',;
+  elite: '⭐';
+};

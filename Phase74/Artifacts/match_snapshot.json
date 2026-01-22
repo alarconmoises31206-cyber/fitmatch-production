@@ -1,0 +1,34 @@
+﻿{
+    "SnapshotId":  "01c567f8-31cf-4ed5-a57a-d840e7f88887",
+    "CaptureTime":  "\/Date(1768085946412)\/",
+    "MatchEngineVersion":  "1.0",
+    "Inputs":  {
+                   "Client":  {
+                                  "user_id":  "user1",
+                                  "id":  "test1",
+                                  "goals":  [
+                                                "test"
+                                            ]
+                              },
+                   "Request":  {
+                                   "Limit":  10,
+                                   "TokenBudget":  null
+                               }
+               },
+    "Configuration":  {
+                          "ScoringWeights":  {
+                                                 "Test":  1
+                                             }
+                      },
+    "TrainerProfiles":  [
+                            {
+                                "verified":  true,
+                                "user_id":  "u1",
+                                "is_active":  true,
+                                "id":  "t1"
+                            }
+                        ],
+    "Results":  null,
+    "EmbeddingHash":  "test",
+    "SnapshotHash":  "97058305886982e747f1ce4483100c3186d906648558837cd6f479d3387d4e49"
+}

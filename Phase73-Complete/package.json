@@ -1,0 +1,24 @@
+﻿{
+  "name": "phase73-founder-validation",
+  "version": "1.0.0",
+  "description": "Phase 73 - Founder Behavioral Validation Implementation Package",
+  "main": "phase73_main.js",
+  "scripts": {
+    "start": "node phase73_main.js --welcome",
+    "list": "node phase73_main.js --list",
+    "simulate": "node phase73_main.js --simulate",
+    "report": "node phase73_main.js --report",
+    "session": "node phase73_main.js --scenario",
+    "help": "node phase73_main.js --help"
+  },
+  "keywords": [
+    "phase73",
+    "founder",
+    "validation",
+    "behavioral",
+    "testing"
+  ],
+  "author": "FitMatch Engineering",
+  "license": "Proprietary",
+  "dependencies": {}
+}

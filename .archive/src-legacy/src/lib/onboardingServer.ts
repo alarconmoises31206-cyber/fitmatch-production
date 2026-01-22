@@ -1,0 +1,90 @@
+// src/lib/onboardingServer.ts;
+// Server-side onboarding helpers for API routes;
+
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+/**;
+ * Server-side function to record first message sent;
+ * This can be called from API routes;
+ */;
+export async function recordFirstMessageSentServer(;
+  userId: string, 
+  conversationId: string;
+): Promise<boolean> {
+  try {
+    // Check if this is the first message for this user;
+    const { data: existingState } = await supabaseAdmin;
+      .from('user_onboarding_state');
+      .select('*');
+      .eq('user_id', userId);
+      .single();
+
+    if (!existingState) {
+      // No onboarding state exists yet;
+      return false;
+    }
+
+    // Check if user has already sent a first message;
+    if (existingState.has_sent_first_message) {
+      return false; // Already recorded;
+    }
+
+    // Update the onboarding state;
+    const updates: any = {
+      has_started_conversation: true,;
+      has_sent_first_message: true,;
+      updated_at: new Date().toISOString();
+    }
+
+    // If all steps are now complete, mark completion;
+    if (existingState.has_completed_questionnaire && 
+        existingState.has_viewed_matches && 
+        !existingState.completed_at) {
+      updates.completed_at = new Date().toISOString();
+    }
+
+    const { error } = await supabaseAdmin;
+      .from('user_onboarding_state');
+      .update(updates);
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error updating onboarding state:', error);
+      return false;
+    }
+
+    console.log(`First message recorded for user ${userId} in conversation ${conversationId}`);
+    return true;
+    
+  } catch (error) {
+    console.error('Error in recordFirstMessageSentServer:', error);
+    return false;
+  }
+}
+
+/**;
+ * Check if a user has sent their first message;
+ */;
+export async function hasUserSentFirstMessage(userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabaseAdmin;
+      .from('user_onboarding_state');
+      .select('has_sent_first_message');
+      .eq('user_id', userId);
+      .single();
+
+    if (error || !data) {
+      return false;
+    }
+
+    return data.has_sent_first_message;
+  } catch (error) {
+    return false;
+  }
+}
+

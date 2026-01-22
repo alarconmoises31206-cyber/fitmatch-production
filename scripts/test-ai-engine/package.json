@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "test:ai-engine": "tsx scripts/test-ai-engine/test-engine.ts"
+  }
+}

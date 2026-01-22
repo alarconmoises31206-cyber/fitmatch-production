@@ -1,0 +1,166 @@
+import React, { useRef, useEffect } from 'react';
+import MessageBubble from './MessageBubble';
+import { ReengagementNudge } from '../Phase34/ReengagementNudge';
+
+interface Message {
+  id: string;
+  sender_id: string;
+  sender_role: 'client' | 'trainer';
+  content: string;
+  created_at: string;
+  read: boolean;
+  is_own_message?: boolean;
+}
+
+interface Conversation {
+  id: string;
+  client_id: string;
+  trainer_id: string;
+  closed_by_user?: boolean | null;
+}
+
+interface MessageThreadProps {
+  messages: Message[];
+  currentUserId: string;
+  conversation?: Conversation;
+  isLoading?: boolean;
+  error?: string | null;
+  onSendMessage?: (message: string) => Promise<void>;
+  onCloseConversation?: () => void;
+}
+
+const MessageThread: React.FC<MessageThreadProps> = ({
+  messages,;
+  currentUserId,;
+  conversation,;
+  isLoading = false,;
+  error = null,;
+  onSendMessage,;
+  onCloseConversation;
+}) => {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to bottom when messages change;
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Group messages by date;
+  const groupMessagesByDate = () => {
+    const groups: { [date: string]: Message[] } = {}
+    
+    messages.forEach(message => {
+      const date = new Date(message.created_at).toLocaleDateString([], {
+        weekday: 'long',;
+        year: 'numeric',;
+        month: 'long',;
+        day: 'numeric';
+      });
+      
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(message);
+    });
+    
+    return groups;
+  }
+
+  const messageGroups = groupMessagesByDate();
+
+  if (isLoading) {
+    return (;
+      <div className="flex-1 flex items-center justify-center">;
+        <div className="text-center">;
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>;
+          <p className="mt-2 text-gray-600">Loading messages...</p>;
+        </div>;
+      </div>;
+    );
+  }
+
+  if (error) {
+    return (;
+      <div className="flex-1 flex items-center justify-center">;
+        <div className="text-center p-6">;
+          <div className="w-12 h-12 mx-auto mb-4 text-red-500">;
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">;
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />;
+            </svg>;
+          </div>;
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading messages</h3>;
+          <p className="text-gray-600 mb-4">{error}</p>;
+          <button;
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700";
+          >;
+            Try Again;
+          </button>;
+        </div>;
+      </div>;
+    );
+  }
+
+  if (messages.length === 0) {
+    return (;
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">;
+        <div className="w-16 h-16 mx-auto mb-4 text-gray-400">;
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">;
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />;
+          </svg>;
+        </div>;
+        <h3 className="text-xl font-medium text-gray-900 mb-2">No messages yet</h3>;
+        <p className="text-gray-600 max-w-md">;
+          Start the conversation! Your first message has been sent. When {messages[0]?.sender_role === 'client' ? 'the trainer' : 'the client'} replies, you'll see it here.;
+        </p>;
+      </div>;
+    );
+  }
+
+  return (;
+    <div className="flex-1 overflow-y-auto p-4">;
+      {/* Re-engagement nudge for stalled conversations */}
+      {conversation && !conversation.closed_by_user && (;
+        <ReengagementNudge;
+          conversation={conversation}
+          onDismiss={() => {
+            // Handle dismiss if needed;
+          }}
+          onSendMessage={onSendMessage}
+          onCloseConversation={onCloseConversation}
+        />;
+      )}
+      
+      {Object.entries(messageGroups).map(([date, dateMessages]) => (;
+        <div key={date} className="mb-6">;
+          {/* Date separator */}
+          <div className="flex items-center justify-center my-4">;
+            <div className="flex-grow border-t border-gray-200"></div>;
+            <span className="mx-4 text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-full">;
+              {date}
+            </span>;
+            <div className="flex-grow border-t border-gray-200"></div>;
+          </div>;
+
+          {/* Messages for this date */}
+          {dateMessages.map((message) => (;
+            <MessageBubble;
+              key={message.id}
+              content={message.content}
+              isOwnMessage={message.sender_id === currentUserId}
+              timestamp={message.created_at}
+              read={message.read}
+              senderRole={message.sender_role}
+            />;
+          ))}
+        </div>;
+      ))}
+      
+      {/* Empty div for scrolling to bottom */}
+      <div ref={messagesEndRef} />;
+    </div>;
+  );
+}
+
+export default MessageThread;
+

@@ -1,0 +1,48 @@
+﻿{
+    "Steps":  [
+                  {
+                      "Rule":  "System Boundary: Input validation only",
+                      "Step":  1,
+                      "Details":  "Client: Trace Test Client, Trainers: 1",
+                      "Action":  "Validate Inputs",
+                      "Outcome":  "Valid"
+                  },
+                  {
+                      "Rule":  "Must be active AND verified",
+                      "Step":  2,
+                      "Details":  "Active: 4/1, Verified: 4/4",
+                      "Action":  "Apply Hard Filters",
+                      "Outcome":  "Passing: 4 trainers"
+                  },
+                  {
+                      "Rule":  "Fixed algorithm, no randomness",
+                      "Step":  3,
+                      "Details":  "Deterministic scoring based on trainer ID hash",
+                      "Action":  "Calculate Scores",
+                      "Outcome":  "Scores calculated for 4 trainers"
+                  },
+                  {
+                      "Rule":  "Higher score = better match",
+                      "Step":  4,
+                      "Details":  "Sort by score descending",
+                      "Action":  "Apply Ranking",
+                      "Outcome":  "Ranked 1 matches"
+                  },
+                  {
+                      "Rule":  "No AI, no learning",
+                      "Step":  5,
+                      "Details":  "Simple template-based explanations",
+                      "Action":  "Generate Explanations",
+                      "Outcome":  "Explanations generated for all matches"
+                  }
+              ],
+    "Summary":  {
+                    "TotalSteps":  5,
+                    "Deterministic":  true,
+                    "AuditTrail":  "Complete",
+                    "DecisionPath":  "Validate → Filter → Score → Rank → Explain"
+                },
+    "Created":  "2026-01-10 18:30:31",
+    "TraceId":  "trace-20260110-183031",
+    "SnapshotId":  "snapshot-20260110-183031-1336"
+}

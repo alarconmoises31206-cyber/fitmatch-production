@@ -1,0 +1,55 @@
+﻿=== PHASE 31 DECISION GUIDE ===
+
+Based on the SQL results, here's what to do:
+
+SCENARIO 1: FUNCTIONS DON'T EXIST
+---------------------------------
+If the SQL shows NO functions (empty result):
+1. Run: scripts/safe-migration-phase31.sql in Supabase
+2. Then backfill data
+
+SCENARIO 2: FUNCTIONS EXIST BUT NO DATA
+----------------------------------------
+If functions exist but row_count = 0:
+1. Backfill using this SQL in Supabase:
+
+DO $$
+BEGIN
+    -- Backfill a few conversations first (for testing)
+    PERFORM compute_conversation_health(id) 
+    FROM conversations 
+    LIMIT 5;
+    
+    -- Backfill trust signals for users in those conversations
+    PERFORM compute_user_trust_signals(user_id)
+    FROM (
+        SELECT client_id as user_id FROM conversations LIMIT 5
+        UNION
+        SELECT trainer_id as user_id FROM conversations LIMIT 5
+    ) AS test_users;
+    
+    RAISE NOTICE ''Test backfill complete!'';
+END $$;
+
+SCENARIO 3: FUNCTIONS EXIST AND HAVE DATA
+------------------------------------------
+If everything exists and has data:
+1. Phase 31 is COMPLETE!
+2. Test the API endpoints
+3. Integrate UI components
+
+TESTING STEPS (After backfill):
+1. Run the backfill script: .\scripts\test-phase31.ps1
+2. Test a specific conversation ID if you have one
+3. Check trust signals for a user ID
+
+QUICK API TEST (Run in PowerShell):
+-----------------------------------
+# Test with a real conversation ID (replace CONVERSATION_ID):
+$body = @{conversationId="CONVERSATION_ID"} | ConvertTo-Json
+curl -X POST http://localhost:3000/api/conversations/compute-health `
+  -H "Content-Type: application/json" `
+  -d $body
+
+# Test trust signals:
+curl http://localhost:3000/api/users/trust-signals

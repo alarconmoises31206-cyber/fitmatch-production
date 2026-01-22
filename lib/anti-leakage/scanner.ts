@@ -22,20 +22,20 @@ class AntiLeakageScanner {
   constructor() {
     // Regex patterns for detection
     this.patterns = {
-      email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+      email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2}\b/g,
       
       // Phone patterns (US and international)
       phone: /(\+\d{1,3}[-.]?)?\(?\d{3}\)?[-.]?\d{3}[-.]?\d{4}\b|\(\d{3}\)\s*\d{3}[-.]?\d{4}\b/g,
       
       // Social media handles and platforms
-      social: /(?:@[\w_]+|(?:https?:\/\/)?(?:www\.)?(?:instagram\.com|twitter\.com|facebook\.com|tiktok\.com|discord\.gg|t\.me)\/[\w\-._~:/?#[\]@!$&'()*+,;=]+)/gi,
+      social: /(?:@[\w_]+|(?:https?:\/\/)?(?:www\.)?(?:instagram\.com|twitter\.com|facebook\.com|tiktok\.com|discord\.gg|t\.me)\/[\w\-._~:/?#[\]@!$&'()*+,=]+)/gi,
       
       // Payment platforms
       payment: /\b(?:paypal|venmo|cashapp|zelle|cash\s*app|venmo\.me|paypal\.me)\b/gi,
       
       // Common off-platform phrases
       phrases: /\b(?:text\s*me|call\s*me|dm\s*me|direct\s*message|off\s*platform|outside\s*the\s*app|my\s*(?:phone|number|email)|whatsapp|signal|telegram)\b/gi
-    };
+    }
     
     this.channelTypes = {
       email: 'email',
@@ -43,7 +43,7 @@ class AntiLeakageScanner {
       social: 'social',
       payment: 'other', // Payments fall under 'other' per our schema
       phrases: 'other'  // Phrases also fall under 'other'
-    };
+    }
   }
 
   /**
@@ -60,13 +60,13 @@ class AntiLeakageScanner {
     
     // Check each pattern
     for (const [patternName, regex] of Object.entries(this.patterns)) {
-      const matches = text.match(regex);
+      const matches = text.match(regex)
       if (matches) {
         detected.push({
           channelType: this.channelTypes[patternName],
           matches: [...matches],
           pattern: patternName
-        });
+        })
       }
     }
     
@@ -90,7 +90,7 @@ class AntiLeakageScanner {
   getWarningMessage(detections: DetectionResult[]): string | null {
     if (detections.length === 0) return null;
     
-    const channels = new Set(detections.map(d => d.channelType));
+    const channels = new Set(detections.map(d => d.channelType))
     
     if (channels.has('email') || channels.has('phone') || channels.has('social')) {
       return "âš ï¸ For paid questions: Stay on FitMatch to remain protected. Off-platform payments cannot be refunded or monitored.";
@@ -101,5 +101,5 @@ class AntiLeakageScanner {
 }
 
 // Export singleton instance
-const scanner = new AntiLeakageScanner();
+const scanner = new AntiLeakageScanner()
 export default scanner;

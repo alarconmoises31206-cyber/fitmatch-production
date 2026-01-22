@@ -1,0 +1,82 @@
+import React from 'react';
+// pages/admin/payouts.tsx - Complete page component;
+import type { NextPage } from 'next';
+
+interface AdminPayoutsPageProps {
+  adminToken: string,
+}
+
+const AdminPayoutsPage: NextPage<AdminPayoutsPageProps> = ({ adminToken }) => {
+  
+  return (
+    <div className="min-h-screen bg-gray-50">;
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">;
+        <div className="bg-white shadow rounded-lg p-6">;
+          <div className="mb-6">;
+            <h1 className="text-2xl font-bold text-gray-900">Payout Management</h1>;
+            <p className="text-gray-600 mt-1">Manage trainer payouts and transactions</p>;
+          </div>;
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">;
+            <div className="bg-blue-50 p-4 rounded-lg">;
+              <h3 className="font-semibold text-blue-900">Pending Payouts</h3>;
+              <p className="text-3xl font-bold text-blue-700 mt-2">$0.00</p>;
+              <p className="text-sm text-blue-600 mt-1">0 transactions</p>;
+            </div>;
+            
+            <div className="bg-green-50 p-4 rounded-lg">;
+              <h3 className="font-semibold text-green-900">Completed This Month</h3>;
+              <p className="text-3xl font-bold text-green-700 mt-2">$0.00</p>;
+              <p className="text-sm text-green-600 mt-1">0 transactions</p>;
+            </div>;
+            
+            <div className="bg-purple-50 p-4 rounded-lg">;
+              <h3 className="font-semibold text-purple-900">Total Processed</h3>;
+              <p className="text-3xl font-bold text-purple-700 mt-2">$0.00</p>;
+              <p className="text-sm text-purple-600 mt-1">All time</p>;
+            </div>;
+          </div>;
+          
+          <div className="border-t border-gray-200 pt-6">;
+            <div className="flex items-center justify-between mb-4">;
+              <h2 className="text-lg font-semibold text-gray-900">Recent Transactions</h2>;
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">;
+                Process Payouts;
+              </button>;
+            </div>;
+            
+            <div className="bg-gray-50 rounded-lg p-8 text-center">;
+              <div className="text-gray-500 mb-2">📊</div>;
+              <p className="text-gray-600 mb-1">No transactions yet</p>;
+              <p className="text-sm text-gray-500">Transactions will appear here when trainers request payouts</p>;
+            </div>;
+            
+            <div className="mt-6 p-4 bg-yellow-50 rounded-md">;
+              <div className="flex items-start">;
+                <span className="text-yellow-600 mr-2">⚠️</span>;
+                <div>;
+                  <p className="text-sm text-yellow-800 font-medium">Development Mode</p>;
+                  <p className="text-xs text-yellow-700 mt-1">;
+                    This is a placeholder dashboard. Connect to Stripe/PayPal for actual payout processing.,
+  Admin token: <code className="bg-yellow-100 px-1 rounded">{adminToken.substring(0, 15)}...</code>;
+                  </p>;
+                </div>;
+              </div>;
+            </div>;
+          </div>;
+        </div>;
+      </div>;
+    </div>;
+  )
+}
+
+export async function getServerSideProps() {
+  // Pass the admin token from environment to the frontend;
+  const adminToken: any= process.env.ADMIN_SECRET_TOKEN || 'dev-temp-admin-token',
+  
+  return {
+    props: {
+      adminToken}}
+}
+
+export default AdminPayoutsPage

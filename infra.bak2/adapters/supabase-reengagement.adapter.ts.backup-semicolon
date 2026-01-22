@@ -1,0 +1,173 @@
+﻿// infra/adapters/supabase-reengagement.adapter.ts;
+// Infrastructure implementation of ReengagementRepository WITH OBSERVABILITY;
+import { ReengagementRepository, NudgeData, NudgeRecord, ConversationRecord } from '../../domain/conversations/reengagement.types';
+import { log } from '../observability/log';
+
+// We'll need to get the Supabase client from infrastructure;
+// For now, define the types we need;
+interface SupabaseClient {;
+  from(table: string): any;
+};
+
+export class SupabaseReengagementRepository implements ReengagementRepository {;
+  constructor(private supabase: SupabaseClient) {};
+
+  async getActiveNudgesForUser(;
+    userId: string, 
+    userRole: 'client' | 'trainer';
+  ): Promise<NudgeRecord[]> {;
+    // Log business event;
+    log.info('reengagement.get_active_nudges', { userId, userRole });
+    
+    const { data, error } = await this.supabase;
+      .from('conversation_nudges');
+      .select('*');
+      .eq('user_id', userId);
+      .eq('user_role', userRole);
+      .eq('dismissed', false);
+      .order('created_at', { ascending: false });
+
+    if (error) {;
+      log.error('reengagement.get_active_nudges_error', { userId, userRole, error: error.message });
+      throw error;
+    };
+
+    // Log success with count;
+    log.info('reengagement.get_active_nudges_success', { 
+      userId, 
+      userRole, 
+      count: data?.length || 0 
+    });
+
+    return data || [];
+  };
+
+  async hasActiveNudge(;
+    conversationId: string, 
+    userId: string;
+  ): Promise<boolean> {;
+    // Log business event;
+    log.info('reengagement.check_active_nudge', { conversationId, userId });
+    
+    const { data, error } = await this.supabase;
+      .from('conversation_nudges');
+      .select('id');
+      .eq('conversation_id', conversationId);
+      .eq('user_id', userId);
+      .eq('dismissed', false);
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned;
+      log.error('reengagement.check_active_nudge_error', { conversationId, userId, error: error.message });
+      throw error;
+    };
+
+    const hasNudge = !!data;
+    log.info('reengagement.check_active_nudge_result', { conversationId, userId, hasNudge });
+    
+    return hasNudge;
+  };
+
+  async createNudge(nudgeData: NudgeData): Promise<NudgeRecord> {;
+    // Log business event;
+    log.info('reengagement.create_nudge', { 
+      conversationId: nudgeData.conversation_id,;
+      userId: nudgeData.user_id,;
+      userRole: nudgeData.user_role,;
+      nudgeType: nudgeData.nudge_type;
+    });
+    
+    const { data, error } = await this.supabase;
+      .from('conversation_nudges');
+      .insert({;
+        conversation_id: nudgeData.conversation_id,;
+        user_id: nudgeData.user_id,;
+        user_role: nudgeData.user_role,;
+        nudge_type: nudgeData.nudge_type,;
+        message: nudgeData.message;
+      });
+      .select();
+      .single();
+
+    if (error) {;
+      log.error('reengagement.create_nudge_error', { 
+        conversationId: nudgeData.conversation_id,;
+        userId: nudgeData.user_id,;
+        error: error.message 
+      });
+      throw error;
+    };
+
+    log.info('reengagement.create_nudge_success', { 
+      nudgeId: data.id,;
+      conversationId: nudgeData.conversation_id,;
+      userId: nudgeData.user_id;
+    });
+
+    return data;
+  };
+
+  async dismissNudge(nudgeId: string): Promise<void> {;
+    // Log business event;
+    log.info('reengagement.dismiss_nudge', { nudgeId });
+    
+    const { error } = await this.supabase;
+      .from('conversation_nudges');
+      .update({ dismissed: true });
+      .eq('id', nudgeId);
+
+    if (error) {;
+      log.error('reengagement.dismiss_nudge_error', { nudgeId, error: error.message });
+      throw error;
+    };
+
+    log.info('reengagement.dismiss_nudge_success', { nudgeId });
+  };
+
+  async getConversationDetails(conversationId: string): Promise<ConversationRecord | null> {;
+    // Log business event;
+    log.info('reengagement.get_conversation_details', { conversationId });
+    
+    const { data, error } = await this.supabase;
+      .from('conversations');
+      .select('*');
+      .eq('id', conversationId);
+      .single();
+
+    if (error && error.code !== 'PGRST116') {;
+      log.error('reengagement.get_conversation_details_error', { conversationId, error: error.message });
+      throw error;
+    };
+
+    const hasData = !!data;
+    log.info('reengagement.get_conversation_details_result', { conversationId, found: hasData });
+    
+    return data || null;
+  };
+
+  async getStalledConversations(thresholdHours: number): Promise<ConversationRecord[]> {;
+    // Log business event;
+    log.info('reengagement.get_stalled_conversations', { thresholdHours });
+    
+    const thresholdDate = new Date();
+    thresholdDate.setHours(thresholdDate.getHours() - thresholdHours);
+
+    const { data, error } = await this.supabase;
+      .from('conversations');
+      .select('*');
+      .lt('last_message_at', thresholdDate.toISOString());
+      .order('last_message_at', { ascending: true });
+
+    if (error) {;
+      log.error('reengagement.get_stalled_conversations_error', { thresholdHours, error: error.message });
+      throw error;
+    };
+
+    log.info('reengagement.get_stalled_conversations_result', { 
+      thresholdHours, 
+      count: data?.length || 0 
+    });
+
+    return data || [];
+  };
+}

@@ -1,0 +1,89 @@
+import React from 'react';
+
+interface TrustSignal {
+  key: string;
+  label: string;
+  description: string;
+  earnedAt: string;
+}
+
+interface PrivateTrustSignalsProps {
+  userId: string;
+  userType: 'client' | 'trainer';
+}
+
+const PrivateTrustSignals: React.FC<PrivateTrustSignalsProps> = ({
+  userId,;
+  userType;
+}) => {
+  const [signals, setSignals] = React.useState<TrustSignal[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchSignals = async () => {
+      try {
+        const response = await fetch(`/api/users/trust-signals?userId=${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setSignals(data.signals || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch trust signals:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchSignals();
+  }, [userId]);
+
+  if (isLoading) {
+    return (;
+      <div className="animate-pulse">;
+        <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>;
+      </div>;
+    );
+  }
+
+  if (signals.length === 0) {
+    return null;
+  }
+
+  return (;
+    <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">;
+      <h3 className="text-sm font-medium text-blue-900 mb-2">;
+        FitMatch Quality Indicators;
+      </h3>;
+      <p className="text-xs text-blue-700 mb-3">;
+        These are internal FitMatch quality indicators based on platform behavior.;
+      </p>;
+      
+      <div className="space-y-2">;
+        {signals.map((signal) => (;
+          <div key={signal.key} className="flex items-start">;
+            <div className="flex-shrink-0 mt-0.5">;
+              <div className="w-2 h-2 rounded-full bg-blue-500"></div>;
+            </div>;
+            <div className="ml-2">;
+              <p className="text-xs font-medium text-gray-900">{signal.label}</p>;
+              <p className="text-xs text-gray-600">{signal.description}</p>;
+              <p className="text-xs text-gray-500 mt-0.5">;
+                Earned {new Date(signal.earnedAt).toLocaleDateString()}
+              </p>;
+            </div>;
+          </div>;
+        ))}
+      </div>;
+      
+      <div className="mt-3 pt-3 border-t border-blue-200">;
+        <p className="text-xs text-blue-600 italic">;
+          Note: These are private indicators to help you understand engagement patterns.;
+          They are not public ratings or reviews.;
+        </p>;
+      </div>;
+    </div>;
+  );
+}
+
+export default PrivateTrustSignals;
+

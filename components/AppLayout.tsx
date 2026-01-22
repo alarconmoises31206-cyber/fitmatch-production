@@ -1,10 +1,11 @@
+import React from 'react';
 // /components/AppLayout.tsx
 import React, { ReactNode } from 'react';
 import { HeaderSpinCounter } from './index';
 
 interface AppLayoutProps {
   children: ReactNode;
-  showHeader?: boolean;
+  showHeader?: boolean,
 }
 
 export default function AppLayout({ children, showHeader = true }: AppLayoutProps) {
@@ -55,5 +56,5 @@ export default function AppLayout({ children, showHeader = true }: AppLayoutProp
         </div>
       </footer>
     </div>
-  );
+  )
 }
