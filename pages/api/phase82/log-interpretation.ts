@@ -12,21 +12,23 @@ const PROMPT_VARIANTS = {
   INFLUENCE_QUESTION: "influence-question-v1"
 } as const;
 
+type PromptVariant = typeof PROMPT_VARIANTS[keyof typeof PROMPT_VARIANTS];
+
 // Valid responses for each prompt variant
-const VALID_RESPONSES = {
+const VALID_RESPONSES: Record<PromptVariant, readonly string[]> = {
   [PROMPT_VARIANTS.INTERPRETATION_QUESTION]: [
     "A suggestion to explore",
     "Advice I should probably follow",
     "A recommendation",
     "A ranking of who's best",
     "I'm not sure"
-  ],
+  ] as const,
   [PROMPT_VARIANTS.INFLUENCE_QUESTION]: [
     "Not at all",
     "A little",
     "Somewhat",
     "A lot"
-  ]
+  ] as const
 } as const;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -50,12 +52,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Validate prompt variant
-    if (!Object.values(PROMPT_VARIANTS).includes(promptVariantId)) {
+    if (!Object.values(PROMPT_VARIANTS).includes(promptVariantId as PromptVariant)) {
       return res.status(400).json({ error: "Invalid prompt variant" });
     }
 
     // Validate response for this prompt variant
-    const validResponses = VALID_RESPONSES[promptVariantId as keyof typeof VALID_RESPONSES];
+    const validResponses = VALID_RESPONSES[promptVariantId as PromptVariant];
     if (!validResponses.includes(selectedResponse)) {
       return res.status(400).json({ error: "Invalid response for prompt variant" });
     }
